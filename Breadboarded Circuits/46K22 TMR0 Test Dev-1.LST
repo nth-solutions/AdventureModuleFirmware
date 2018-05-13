@@ -1,0 +1,3613 @@
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE  1
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00001 
+                      00002 ; PICBASIC PRO(TM) Compiler 3.1.1.4, (c) 1997, 2018 ME Labs, Inc. All Rights Reserved. 
+  00000001            00003 MPASMX_USED                     EQU     1
+                      00004 
+                      00005 #define PBP_PATH        C:\PROGRAM FILES (X86)\PBP3\
+                      00006 
+                      00007 
+                      00008 
+                      00009 
+                      00016         LIST
+                      00017         LIST p = 18F46K22, r = dec, w = -311, w = -230, f = inhx32
+                      00018         INCLUDE "P18F46K22.INC" ; MPASM  Header
+                      00001         LIST
+                      00002 
+                      00003 ;==========================================================================
+                      00004 ; Build date : Jul 02 2017
+                      00005 ;  MPASM PIC18F46K22 processor include
+                      00006 ; 
+                      00007 ;  (c) Copyright 1999-2017 Microchip Technology, All rights reserved
+                      00008 ;==========================================================================
+                      00009 
+                      02799         LIST
+                      00021         LIST
+  00F00000            00022 EEPROM_START    EQU     0F00000h
+  00000040            00023 BLOCK_SIZE      EQU     64
+                      00024 
+                      00025 
+                      00026 PBP_HARDWAREDEF  macro
+                      00027   endm
+                      00028 
+                      00029 
+08 1F 3F BD 81 0F C0 000030     CONFIG  FOSC = INTIO67        ; Internal oscillator block
+       F E0 0F 40 
+                      00031     CONFIG  PLLCFG = OFF          ; Oscillator used directly
+                      00032     CONFIG  PRICLKEN = OFF        ; Primary clock can be disabled by software
+                      00033     CONFIG  FCMEN = OFF           ; Fail-Safe Clock Monitor disabled
+                      00034     CONFIG  IESO = OFF            ; Oscillator Switchover mode disabled
+                      00035     CONFIG  PWRTEN = OFF          ; Power up timer disabled
+                      00036     CONFIG  BOREN = SBORDIS       ; Brown-out Reset enabled in hardware only (SBOREN is disabled)
+                      00037     CONFIG  BORV = 190            ; VBOR set to 1.90 V nominal
+                      00038     CONFIG  WDTEN = ON            ; WDT is always enabled. SWDTEN bit has no effect
+                      00039     CONFIG  WDTPS = 32768         ; 1:32768
+                      00040     CONFIG  CCP2MX = PORTC1       ; CCP2 input/output is multiplexed with RC1
+                      00041     CONFIG  PBADEN = OFF          ; PORTB<5:0> pins are configured as digital I/O on Reset
+                      00042     CONFIG  CCP3MX = PORTB5       ; P3A/CCP3 input/output is multiplexed with RB5
+                      00043     CONFIG  HFOFST = ON           ; HFINTOSC output and ready status are not delayed by the oscillator s
+                            table status
+                      00044     CONFIG  T3CMX = PORTC0        ; T3CKI is on RC0
+                      00045     CONFIG  P2BMX = PORTD2        ; P2B is on RD2
+                      00046     CONFIG  MCLRE = EXTMCLR       ; MCLR pin enabled, RE3 input pin disabled
+                      00047     CONFIG  STVREN = ON           ; Stack full/underflow will cause Reset
+                      00048     CONFIG  LVP = OFF             ; Single-Supply ICSP disabled
+                      00049     CONFIG  XINST = OFF           ; Instruction set extension and Indexed Addressing mode disabled (Lega
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE  2
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                            cy mode)
+                      00050     CONFIG  DEBUG = OFF           ; Disabled
+                      00051     CONFIG  CP0 = OFF             ; Block 0 (000800-003FFFh) not code-protected
+                      00052     CONFIG  CP1 = OFF             ; Block 1 (004000-007FFFh) not code-protected
+                      00053     CONFIG  CP2 = OFF             ; Block 2 (008000-00BFFFh) not code-protected
+                      00054     CONFIG  CP3 = OFF             ; Block 3 (00C000-00FFFFh) not code-protected
+                      00055     CONFIG  CPB = OFF             ; Boot block (000000-0007FFh) not code-protected
+                      00056     CONFIG  CPD = OFF             ; Data EEPROM not code-protected
+                      00057     CONFIG  WRT0 = OFF            ; Block 0 (000800-003FFFh) not write-protected
+                      00058     CONFIG  WRT1 = OFF            ; Block 1 (004000-007FFFh) not write-protected
+                      00059     CONFIG  WRT2 = OFF            ; Block 2 (008000-00BFFFh) not write-protected
+                      00060     CONFIG  WRT3 = OFF            ; Block 3 (00C000-00FFFFh) not write-protected
+                      00061     CONFIG  WRTC = OFF            ; Configuration registers (300000-3000FFh) not write-protected
+                      00062     CONFIG  WRTB = OFF            ; Boot Block (000000-0007FFh) not write-protected
+                      00063     CONFIG  WRTD = OFF            ; Data EEPROM not write-protected
+                      00064     CONFIG  EBTR0 = OFF           ; Block 0 (000800-003FFFh) not protected from table reads executed in 
+                            other blocks
+                      00065     CONFIG  EBTR1 = OFF           ; Block 1 (004000-007FFFh) not protected from table reads executed in 
+                            other blocks
+                      00066     CONFIG  EBTR2 = OFF           ; Block 2 (008000-00BFFFh) not protected from table reads executed in 
+                            other blocks
+                      00067     CONFIG  EBTR3 = OFF           ; Block 3 (00C000-00FFFFh) not protected from table reads executed in 
+                            other blocks
+                      00068     CONFIG  EBTRB = OFF           ; Boot Block (000000-0007FFh) not protected from table reads executed 
+                            in other blocks
+                      00069 
+                      00070 
+                      00071 
+                      00072 ; Define statements.
+                      00073 ; C:\PROGRAM FILES (X86)\PBP3\DEVICES\PIC18F46K22.PBPINC        00400   DEFINE  ADC_CHANNELS  1
+                      00074 #define         ADC_CHANNELS              1
+                      00075 ; C:\USERS\ANDREW MCENTEE\DOCUMENTS\NTH SOLUTIONS\URICCHIO\PBP3\46K22 TMR0 TEST DEV-1.PBP       00037   
+                            define OSC 32        
+                      00076 #define         OSC              32        
+                      00077 
+  00000000            00078 RAM_START                       EQU     00000h
+  00000F37            00079 RAM_END                         EQU     00F37h
+  00000010            00080 RAM_BANKS                       EQU     00010h
+  00000060            00081 BANK0_START                     EQU     00060h
+  000000FF            00082 BANK0_END                       EQU     000FFh
+  00000100            00083 BANK1_START                     EQU     00100h
+  000001FF            00084 BANK1_END                       EQU     001FFh
+  00000200            00085 BANK2_START                     EQU     00200h
+  000002FF            00086 BANK2_END                       EQU     002FFh
+  00000300            00087 BANK3_START                     EQU     00300h
+  000003FF            00088 BANK3_END                       EQU     003FFh
+  00000400            00089 BANK4_START                     EQU     00400h
+  000004FF            00090 BANK4_END                       EQU     004FFh
+  00000500            00091 BANK5_START                     EQU     00500h
+  000005FF            00092 BANK5_END                       EQU     005FFh
+  00000600            00093 BANK6_START                     EQU     00600h
+  000006FF            00094 BANK6_END                       EQU     006FFh
+  00000700            00095 BANK7_START                     EQU     00700h
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE  3
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+  000007FF            00096 BANK7_END                       EQU     007FFh
+  00000800            00097 BANK8_START                     EQU     00800h
+  000008FF            00098 BANK8_END                       EQU     008FFh
+  00000900            00099 BANK9_START                     EQU     00900h
+  000009FF            00100 BANK9_END                       EQU     009FFh
+  00000A00            00101 BANK10_START                    EQU     00A00h
+  00000AFF            00102 BANK10_END                      EQU     00AFFh
+  00000B00            00103 BANK11_START                    EQU     00B00h
+  00000BFF            00104 BANK11_END                      EQU     00BFFh
+  00000C00            00105 BANK12_START                    EQU     00C00h
+  00000CFF            00106 BANK12_END                      EQU     00CFFh
+  00000D00            00107 BANK13_START                    EQU     00D00h
+  00000DFF            00108 BANK13_END                      EQU     00DFFh
+  00000E00            00109 BANK14_START                    EQU     00E00h
+  00000EFF            00110 BANK14_END                      EQU     00EFFh
+  00000F00            00111 BANK15_START                    EQU     00F00h
+  00000F37            00112 BANK15_END                      EQU     00F37h
+  00000000            00113 BANKA_START                     EQU     00000h
+  0000005F            00114 BANKA_END                       EQU     0005Fh
+                      00115 
+                      00116 ; C:\PROGRAM FILES (X86)\PBP3\PBPPIC18.RAM      00028   A00000  FLAGS   VAR     BYTE BANKA SYSTEM       
+                            ' Static flags
+  00000000            00117 FLAGS                           EQU     RAM_START + 000h
+                      00118 ; C:\PROGRAM FILES (X86)\PBP3\PBPPIC18.RAM      00027   A00001  GOP     VAR     BYTE BANKA SYSTEM       
+                            ' Gen Op Parameter
+  00000001            00119 GOP                             EQU     RAM_START + 001h
+                      00120 ; C:\PROGRAM FILES (X86)\PBP3\PBPPIC18.RAM      00012   A00002  R0      VAR     WORD BANKA SYSTEM       
+                            ' System Register
+  00000002            00121 R0                              EQU     RAM_START + 002h
+                      00122 ; C:\PROGRAM FILES (X86)\PBP3\PBPPIC18.RAM      00013   A00004  R1      VAR     WORD BANKA SYSTEM       
+                            ' System Register
+  00000004            00123 R1                              EQU     RAM_START + 004h
+                      00124 ; C:\PROGRAM FILES (X86)\PBP3\PBPPIC18.RAM      00014   A00006  R2      VAR     WORD BANKA SYSTEM       
+                            ' System Register
+  00000006            00125 R2                              EQU     RAM_START + 006h
+                      00126 ; C:\PROGRAM FILES (X86)\PBP3\PBPPIC18.RAM      00015   A00008  R3      VAR     WORD BANKA SYSTEM       
+                            ' System Register
+  00000008            00127 R3                              EQU     RAM_START + 008h
+                      00128 ; C:\PROGRAM FILES (X86)\PBP3\PBPPIC18.RAM      00016   A0000A  R4      VAR     WORD BANKA SYSTEM       
+                            ' System Register
+  0000000A            00129 R4                              EQU     RAM_START + 00Ah
+                      00130 ; C:\PROGRAM FILES (X86)\PBP3\PBPPIC18.RAM      00017   A0000C  R5      VAR     WORD BANKA SYSTEM       
+                            ' System Register
+  0000000C            00131 R5                              EQU     RAM_START + 00Ch
+                      00132 ; C:\PROGRAM FILES (X86)\PBP3\PBPPIC18.RAM      00018   A0000E  R6      VAR     WORD BANKA SYSTEM       
+                            ' System Register
+  0000000E            00133 R6                              EQU     RAM_START + 00Eh
+                      00134 ; C:\PROGRAM FILES (X86)\PBP3\PBPPIC18.RAM      00019   A00010  R7      VAR     WORD BANKA SYSTEM       
+                            ' System Register
+  00000010            00135 R7                              EQU     RAM_START + 010h
+                      00136 ; C:\PROGRAM FILES (X86)\PBP3\PBPPIC18.RAM      00020   A00012  R8      VAR     WORD BANKA SYSTEM       
+                            ' System Register
+  00000012            00137 R8                              EQU     RAM_START + 012h
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE  4
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00138 ; C:\PROGRAM FILES (X86)\PBP3\PBPPIC18.RAM      00023   A00014  RM1     VAR     BYTE BANKA SYSTEM       
+                            ' Pin 1 Mask
+  00000014            00139 RM1                             EQU     RAM_START + 014h
+                      00140 ; C:\PROGRAM FILES (X86)\PBP3\PBPPIC18.RAM      00026   A00015  RM2     VAR     BYTE BANKA SYSTEM       
+                            ' Pin 2 Mask
+  00000015            00141 RM2                             EQU     RAM_START + 015h
+                      00142 ; C:\PROGRAM FILES (X86)\PBP3\PBPPIC18.RAM      00021   A00016  RR1     VAR     BYTE BANKA SYSTEM       
+                            ' Pin 1 Register
+  00000016            00143 RR1                             EQU     RAM_START + 016h
+                      00144 ; C:\PROGRAM FILES (X86)\PBP3\PBPPIC18.RAM      00024   A00017  RR2     VAR     BYTE BANKA SYSTEM       
+                            ' Pin 2 Register
+  00000017            00145 RR2                             EQU     RAM_START + 017h
+                      00146 ; C:\PROGRAM FILES (X86)\PBP3\PBPPIC18.RAM      00022   A00018  RS1     VAR     BYTE BANKA SYSTEM       
+                            ' Pin 1 Bank
+  00000018            00147 RS1                             EQU     RAM_START + 018h
+                      00148 ; C:\PROGRAM FILES (X86)\PBP3\PBPPIC18.RAM      00025   A00019  RS2     VAR     BYTE BANKA SYSTEM       
+                            ' Pin 2 Bank
+  00000019            00149 RS2                             EQU     RAM_START + 019h
+                      00150 ; C:\PROGRAM FILES (X86)\PBP3\DEVICES\PIC18F46K22.PBPINC        00401   PORTL   VAR     PORTB
+  00000F81            00151 _PORTL                          EQU      PORTB
+                      00152 ; C:\PROGRAM FILES (X86)\PBP3\DEVICES\PIC18F46K22.PBPINC        00402   PORTH   VAR     PORTC
+  00000F82            00153 _PORTH                          EQU      PORTC
+                      00154 ; C:\PROGRAM FILES (X86)\PBP3\DEVICES\PIC18F46K22.PBPINC        00403   TRISL   VAR     TRISB
+  00000F93            00155 _TRISL                          EQU      TRISB
+                      00156 ; C:\PROGRAM FILES (X86)\PBP3\DEVICES\PIC18F46K22.PBPINC        00404   TRISH   VAR     TRISC
+  00000F94            00157 _TRISH                          EQU      TRISC
+                      00158 #define _BLUE_LED               _PORTD??1
+                      00159 #define _INT_PIN                _PORTD??0
+                      00160 #define _PORTD??1                PORTD, 001h
+                      00161 #define _PORTD??0                PORTD, 000h
+                      00162 #define _INTCON??2               INTCON, 002h
+                      00163 
+                      00164 ; Constants.
+  00000000            00165 _T2400                          EQU     00000h
+  00000001            00166 _T1200                          EQU     00001h
+  00000002            00167 _T9600                          EQU     00002h
+  00000003            00168 _T300                           EQU     00003h
+  00000004            00169 _N2400                          EQU     00004h
+  00000005            00170 _N1200                          EQU     00005h
+  00000006            00171 _N9600                          EQU     00006h
+  00000007            00172 _N300                           EQU     00007h
+  00000008            00173 _OT2400                         EQU     00008h
+  00000009            00174 _OT1200                         EQU     00009h
+  0000000A            00175 _OT9600                         EQU     0000Ah
+  0000000B            00176 _OT300                          EQU     0000Bh
+  0000000C            00177 _ON2400                         EQU     0000Ch
+  0000000D            00178 _ON1200                         EQU     0000Dh
+  0000000E            00179 _ON9600                         EQU     0000Eh
+  0000000F            00180 _ON300                          EQU     0000Fh
+  00000000            00181 _MSBPRE                         EQU     00000h
+  00000001            00182 _LSBPRE                         EQU     00001h
+  00000002            00183 _MSBPOST                        EQU     00002h
+  00000003            00184 _LSBPOST                        EQU     00003h
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE  5
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+  00000000            00185 _LSBFIRST                       EQU     00000h
+  00000001            00186 _MSBFIRST                       EQU     00001h
+  00000000            00187 _CLS                            EQU     00000h
+  00000001            00188 _HOME                           EQU     00001h
+  00000007            00189 _BELL                           EQU     00007h
+  00000008            00190 _BKSP                           EQU     00008h
+  00000009            00191 _TAB                            EQU     00009h
+  0000000D            00192 _CR                             EQU     0000Dh
+  00000012            00193 _UnitOn                         EQU     00012h
+  0000001A            00194 _UnitOff                        EQU     0001Ah
+  0000001C            00195 _UnitsOff                       EQU     0001Ch
+  00000014            00196 _LightsOn                       EQU     00014h
+  00000010            00197 _LightsOff                      EQU     00010h
+  0000001E            00198 _Dim                            EQU     0001Eh
+  00000016            00199 _Bright                         EQU     00016h
+  00008235            00200 _TMR0_TICK_THRESHOLD            EQU     08235h
+                      00201 
+                      00202 ; EEPROM data.
+                      00203 
+                      00204 
+                      00205         INCLUDE "46K22 TMR0 TEST DEV-1.MAC"
+                      00001 
+                      00103         LIST
+                      00206         INCLUDE "C:\PROGRAM FILES (X86)\PBP3\PBPPIC18.LIB"
+                      00001 ;******************************************************************
+                      00002 ;*  PBPPIC18.LIB                                                  *
+                      00003 ;*                                                                *
+                      00004 ;*  By        : Leonard Zerman, Jeff Schmoyer, Darrel Taylor,     *
+                      00005 ;*              Charles Leo                                       *
+                      00006 ;*  Notice    : Copyright (c) 2017 microEngineering Labs, Inc.    *
+                      00007 ;*              All Rights Reserved                               *
+                      00008 ;*  Date      : 03/27/2017                                        *
+                      00009 ;*  Version   : 3.1.0                                             *
+                      00010 ;*  Notes     :                                                   *
+                      00011 ;******************************************************************
+                      00111   LIST
+                      00112 ; Oscillator is 32MHz
+                      01228   LIST
+000000                01229     ORG RESET_ORG               ; Reset vector at 0
+                      01238   LIST
+000000 EF28 F000      01239         goto    INIT            ; Finish initialization
+                      01255   LIST
+000008                01256     ORG RESET_ORG + 8           ; High priority interrupt vector at 8
+000008 0012           01257         return                  ; Return from interrupt without setting GIE
+                      01269   LIST
+000018                01270     ORG RESET_ORG + 18h         ; Low priority interrupt vector at 18h
+000018 0012           01271         return                  ; Return from interrupt without setting GIE
+                      06611   LIST
+00001A 6A05           06612 PAUSE   clrf    R1 + 1
+00001C 6E04           06613 PAUSEL  movwf   R1
+00001E 6AE8           06614 pauseloop clrf  WREG            ; 1 (8) Clear W for subtracts
+000020 0604           06615         decf    R1, F           ; 1
+000022 5A05           06616         subwfb  R1 + 1, F       ; 1
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE  6
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+000024 A0D8           06617         btfss   STATUS, C       ; 2
+000026 EF25 F000      06618         goto    DUNN
+00002A 0E03           06619         movlw   (PAUSE_DELAY) >> 8      ; 1
+00002C 6E03           06620         movwf   R0 + 1          ; 1
+00002E 0EE7           06621         movlw   low (PAUSE_DELAY)       ; 1
+000030 D802           06622         rcall   PAUSEUSL        ; -2 (PAUSEUSL gives you 2 less than you ask for)
+000032 D7F5           06623         bra     pauseloop       ; 2
+                      06908   LIST
+000034 6A03           06909 PAUSEUS clrf    R0 + 1          ; 1
+000036 0FFD           06910 PAUSEUSL addlw  -3              ; 1 Subtract overhead
+000038 6E02           06911         movwf   R0              ; 1
+00003A D001           06912         bra     pauseush        ; 2
+00003C 0602           06913 pauseusloop decf R0, F          ; 1
+                      06914 pauseush CLRWDT?NOP             ; 1
+                          M     ifndef NO_CLRWDT
+00003E 0004               M         clrwdt
+                          M     else
+                          M         nop
+                          M     endif
+000040 D000           06915         bra     $ + 2           ; 2
+000042 6AE8           06916         clrf    WREG            ; 1
+000044 5A03           06917         subwfb  R0 + 1, F       ; 1
+000046 E2FA           06918         bc      pauseusloop     ; 1 / 2
+000048 0012           06919         return                  ; 2 + 3 (call + setup)
+                      08079   LIST
+00004A 0100           08080 DUNN    movlb   0               ; 1 Reset banks to 0
+                      08081 DUNN5   CLRWDT?NOP              ; 1 Hit Watchdog timer
+                          M     ifndef NO_CLRWDT
+00004C 0004               M         clrwdt
+                          M     else
+                          M         nop
+                          M     endif
+00004E 0012           08082         return                  ; 2 Done
+                      08095   LIST
+000050                08096 INIT
+                      08132   LIST
+000050                08133 main
+                      00207 
+                      00208 
+                      00209 ; C:\PROGRAM FILES (X86)\PBP3\DEVICES\PIC18F46K22.PBPINC        00036   #HEADER
+                      00210 ; C:\PROGRAM FILES (X86)\PBP3\DEVICES\PIC18F46K22.PBPINC        00061   #CONFIG
+                      00211 ; C:\PROGRAM FILES (X86)\PBP3\DEVICES\PIC18F46K22.PBPINC        00373   BANKA   $0000, $005F
+                      00212 ; C:\PROGRAM FILES (X86)\PBP3\DEVICES\PIC18F46K22.PBPINC        00374   BANK0   $0060, $00FF
+                      00213 ; C:\PROGRAM FILES (X86)\PBP3\DEVICES\PIC18F46K22.PBPINC        00375   BANK1   $0100, $01FF
+                      00214 ; C:\PROGRAM FILES (X86)\PBP3\DEVICES\PIC18F46K22.PBPINC        00376   BANK2   $0200, $02FF
+                      00215 ; C:\PROGRAM FILES (X86)\PBP3\DEVICES\PIC18F46K22.PBPINC        00377   BANK3   $0300, $03FF
+                      00216 ; C:\PROGRAM FILES (X86)\PBP3\DEVICES\PIC18F46K22.PBPINC        00378   BANK4   $0400, $04FF
+                      00217 ; C:\PROGRAM FILES (X86)\PBP3\DEVICES\PIC18F46K22.PBPINC        00379   BANK5   $0500, $05FF
+                      00218 ; C:\PROGRAM FILES (X86)\PBP3\DEVICES\PIC18F46K22.PBPINC        00380   BANK6   $0600, $06FF
+                      00219 ; C:\PROGRAM FILES (X86)\PBP3\DEVICES\PIC18F46K22.PBPINC        00381   BANK7   $0700, $07FF
+                      00220 ; C:\PROGRAM FILES (X86)\PBP3\DEVICES\PIC18F46K22.PBPINC        00382   BANK8   $0800, $08FF
+                      00221 ; C:\PROGRAM FILES (X86)\PBP3\DEVICES\PIC18F46K22.PBPINC        00383   BANK9   $0900, $09FF
+                      00222 ; C:\PROGRAM FILES (X86)\PBP3\DEVICES\PIC18F46K22.PBPINC        00384   BANK10  $0A00, $0AFF
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE  7
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00223 ; C:\PROGRAM FILES (X86)\PBP3\DEVICES\PIC18F46K22.PBPINC        00385   BANK11  $0B00, $0BFF
+                      00224 ; C:\PROGRAM FILES (X86)\PBP3\DEVICES\PIC18F46K22.PBPINC        00386   BANK12  $0C00, $0CFF
+                      00225 ; C:\PROGRAM FILES (X86)\PBP3\DEVICES\PIC18F46K22.PBPINC        00387   BANK13  $0D00, $0DFF
+                      00226 ; C:\PROGRAM FILES (X86)\PBP3\DEVICES\PIC18F46K22.PBPINC        00388   BANK14  $0E00, $0EFF
+                      00227 ; C:\PROGRAM FILES (X86)\PBP3\DEVICES\PIC18F46K22.PBPINC        00389   BANK15  $0F00, $0F37
+                      00228 ; C:\PROGRAM FILES (X86)\PBP3\DEVICES\PIC18F46K22.PBPINC        00395       INCLUDE "PBPPI18L.RAM"
+                      00229 ; C:\PROGRAM FILES (X86)\PBP3\DEVICES\PIC18F46K22.PBPINC        00396   #ELSE
+                      00230 ; C:\PROGRAM FILES (X86)\PBP3\DEVICES\PIC18F46K22.PBPINC        00397       LIBRARY  "PBPPIC18"
+                      00231 
+                      00232 ; C:\PROGRAM FILES (X86)\PBP3\DEVICES\PIC18F46K22.PBPINC        00398       INCLUDE "PBPPIC18.RAM"
+                      00233 ; C:\PROGRAM FILES (X86)\PBP3\DEVICES\PIC18F46K22.PBPINC        00399   #ENDIF
+                      00234 ; C:\PROGRAM FILES (X86)\PBP3\DEVICES\PIC18F46K22.PBPINC        00400   DEFINE  ADC_CHANNELS  1
+                      00235 ; C:\PROGRAM FILES (X86)\PBP3\DEVICES\PIC18F46K22.PBPINC        00408   #HEADER
+                      00236 
+                      00237 ; C:\USERS\ANDREW MCENTEE\DOCUMENTS\NTH SOLUTIONS\URICCHIO\PBP3\46K22 TMR0 TEST DEV-1.PBP       00036   
+                            include "MODEDEFS.BAS"
+                      00238 ; C:\PROGRAM FILES (X86)\PBP3\MODEDEFS.BAS      00014   Symbol T2400  = 0       ' Driven True
+                      00239 ; C:\PROGRAM FILES (X86)\PBP3\MODEDEFS.BAS      00015   Symbol T1200  = 1       ' Driven True
+                      00240 ; C:\PROGRAM FILES (X86)\PBP3\MODEDEFS.BAS      00016   Symbol T9600  = 2       ' Driven True
+                      00241 ; C:\PROGRAM FILES (X86)\PBP3\MODEDEFS.BAS      00017   Symbol T300   = 3       ' Driven True
+                      00242 ; C:\PROGRAM FILES (X86)\PBP3\MODEDEFS.BAS      00019   Symbol N2400  = 4       ' Driven Inverted
+                      00243 ; C:\PROGRAM FILES (X86)\PBP3\MODEDEFS.BAS      00020   Symbol N1200  = 5       ' Driven Inverted
+                      00244 ; C:\PROGRAM FILES (X86)\PBP3\MODEDEFS.BAS      00021   Symbol N9600  = 6       ' Driven Inverted
+                      00245 ; C:\PROGRAM FILES (X86)\PBP3\MODEDEFS.BAS      00022   Symbol N300   = 7       ' Driven Inverted
+                      00246 ; C:\PROGRAM FILES (X86)\PBP3\MODEDEFS.BAS      00024   Symbol OT2400 = 8       ' Open True
+                      00247 ; C:\PROGRAM FILES (X86)\PBP3\MODEDEFS.BAS      00025   Symbol OT1200 = 9       ' Open True
+                      00248 ; C:\PROGRAM FILES (X86)\PBP3\MODEDEFS.BAS      00026   Symbol OT9600 = 10      ' Open True
+                      00249 ; C:\PROGRAM FILES (X86)\PBP3\MODEDEFS.BAS      00027   Symbol OT300  = 11      ' Open True
+                      00250 ; C:\PROGRAM FILES (X86)\PBP3\MODEDEFS.BAS      00029   Symbol ON2400 = 12      ' Open Inverted
+                      00251 ; C:\PROGRAM FILES (X86)\PBP3\MODEDEFS.BAS      00030   Symbol ON1200 = 13      ' Open Inverted
+                      00252 ; C:\PROGRAM FILES (X86)\PBP3\MODEDEFS.BAS      00031   Symbol ON9600 = 14      ' Open Inverted
+                      00253 ; C:\PROGRAM FILES (X86)\PBP3\MODEDEFS.BAS      00032   Symbol ON300  = 15      ' Open Inverted
+                      00254 ; C:\PROGRAM FILES (X86)\PBP3\MODEDEFS.BAS      00036   Symbol MSBPRE = 0       ' MSB first, sample befo
+                            re clock
+                      00255 ; C:\PROGRAM FILES (X86)\PBP3\MODEDEFS.BAS      00037   Symbol LSBPRE = 1       ' LSB first, sample befo
+                            re clock
+                      00256 ; C:\PROGRAM FILES (X86)\PBP3\MODEDEFS.BAS      00038   Symbol MSBPOST = 2      ' MSB first, sample afte
+                            r clock
+                      00257 ; C:\PROGRAM FILES (X86)\PBP3\MODEDEFS.BAS      00039   Symbol LSBPOST = 3      ' LSB first, sample afte
+                            r clock
+                      00258 ; C:\PROGRAM FILES (X86)\PBP3\MODEDEFS.BAS      00042   Symbol LSBFIRST = 0     ' LSB first
+                      00259 ; C:\PROGRAM FILES (X86)\PBP3\MODEDEFS.BAS      00043   Symbol MSBFIRST = 1     ' MSB first
+                      00260 ; C:\PROGRAM FILES (X86)\PBP3\MODEDEFS.BAS      00047   Symbol CLS = 0
+                      00261 ; C:\PROGRAM FILES (X86)\PBP3\MODEDEFS.BAS      00048   Symbol HOME = 1
+                      00262 ; C:\PROGRAM FILES (X86)\PBP3\MODEDEFS.BAS      00049   Symbol BELL = 7
+                      00263 ; C:\PROGRAM FILES (X86)\PBP3\MODEDEFS.BAS      00050   Symbol BKSP = 8
+                      00264 ; C:\PROGRAM FILES (X86)\PBP3\MODEDEFS.BAS      00051   Symbol TAB = 9
+                      00265 ; C:\PROGRAM FILES (X86)\PBP3\MODEDEFS.BAS      00052   Symbol CR = 13
+                      00266 ; C:\PROGRAM FILES (X86)\PBP3\MODEDEFS.BAS      00056   Symbol UnitOn = %10010
+                      00267 ; C:\PROGRAM FILES (X86)\PBP3\MODEDEFS.BAS      00057   Symbol UnitOff = %11010
+                      00268 ; C:\PROGRAM FILES (X86)\PBP3\MODEDEFS.BAS      00058   Symbol UnitsOff = %11100
+                      00269 ; C:\PROGRAM FILES (X86)\PBP3\MODEDEFS.BAS      00059   Symbol LightsOn = %10100
+                      00270 ; C:\PROGRAM FILES (X86)\PBP3\MODEDEFS.BAS      00060   Symbol LightsOff = %10000
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE  8
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00271 ; C:\PROGRAM FILES (X86)\PBP3\MODEDEFS.BAS      00061   Symbol Dim = %11110
+                      00272 ; C:\PROGRAM FILES (X86)\PBP3\MODEDEFS.BAS      00062   Symbol Bright = %10110
+                      00273 ; C:\USERS\ANDREW MCENTEE\DOCUMENTS\NTH SOLUTIONS\URICCHIO\PBP3\46K22 TMR0 TEST DEV-1.PBP       00037   
+                            define OSC 32        
+                      00274 
+                      00275 ; C:\USERS\ANDREW MCENTEE\DOCUMENTS\NTH SOLUTIONS\URICCHIO\PBP3\46K22 TMR0 TEST DEV-1.PBP       00039   
+                            OSCCON = %11101000              'USE CRYSTAL OSCILLATOR AT 8 MHZ
+                      00276         MOVE?CB 0E8h, OSCCON
+                          M         CHK?RP  OSCCON
+                          M     if (((OSCCON) & 8000h) != PREV_ALT)
+                          M       if ((OSCCON) & 8000h)
+                          M         bsf     WDTCON, ADSHR
+                          M       else
+                          M         bcf     WDTCON, ADSHR
+                          M       endif
+                          M PREV_ALT = (OSCCON) & 8000h
+                          M     endif
+                          M     if ((((OSCCON) & 0fffh) > BANKA_END) & (((OSCCON) & 0fffh) < (0f01h + BANKA_END)))
+                          M       if (((OSCCON) & 0f00h) != (PREV_BANK << 8))
+                          M         movlb   high (OSCCON)
+                          M PREV_BANK = high (OSCCON)
+                          M       endif
+                          M     endif
+                          M     if (low (0E8h) == 0)
+                          M         clrf    OSCCON
+                          M     else
+                          M       if (low (0E8h) == 255)
+                          M         setf    OSCCON
+                          M       else
+000050 0EE8               M         movlw   low (0E8h)
+000052 6ED3               M         movwf   OSCCON
+                          M       endif
+                          M     endif
+                      00277 
+                      00278 ; C:\USERS\ANDREW MCENTEE\DOCUMENTS\NTH SOLUTIONS\URICCHIO\PBP3\46K22 TMR0 TEST DEV-1.PBP       00040   
+                            OSCCON2 = %10000000             'ENABLE 4xPLL
+                      00279         MOVE?CB 080h, OSCCON2
+                          M         CHK?RP  OSCCON2
+                          M     if (((OSCCON2) & 8000h) != PREV_ALT)
+                          M       if ((OSCCON2) & 8000h)
+                          M         bsf     WDTCON, ADSHR
+                          M       else
+                          M         bcf     WDTCON, ADSHR
+                          M       endif
+                          M PREV_ALT = (OSCCON2) & 8000h
+                          M     endif
+                          M     if ((((OSCCON2) & 0fffh) > BANKA_END) & (((OSCCON2) & 0fffh) < (0f01h + BANKA_END)))
+                          M       if (((OSCCON2) & 0f00h) != (PREV_BANK << 8))
+                          M         movlb   high (OSCCON2)
+                          M PREV_BANK = high (OSCCON2)
+                          M       endif
+                          M     endif
+                          M     if (low (080h) == 0)
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE  9
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                          M         clrf    OSCCON2
+                          M     else
+                          M       if (low (080h) == 255)
+                          M         setf    OSCCON2
+                          M       else
+000054 0E80               M         movlw   low (080h)
+000056 6ED2               M         movwf   OSCCON2
+                          M       endif
+                          M     endif
+                      00280 
+                      00281 ; C:\USERS\ANDREW MCENTEE\DOCUMENTS\NTH SOLUTIONS\URICCHIO\PBP3\46K22 TMR0 TEST DEV-1.PBP       00041   
+                            OSCTUNE = %01000000             'ENABLE 4xPLL FOR INTOSC
+                      00282         MOVE?CB 040h, OSCTUNE
+                          M         CHK?RP  OSCTUNE
+                          M     if (((OSCTUNE) & 8000h) != PREV_ALT)
+                          M       if ((OSCTUNE) & 8000h)
+                          M         bsf     WDTCON, ADSHR
+                          M       else
+                          M         bcf     WDTCON, ADSHR
+                          M       endif
+                          M PREV_ALT = (OSCTUNE) & 8000h
+                          M     endif
+                          M     if ((((OSCTUNE) & 0fffh) > BANKA_END) & (((OSCTUNE) & 0fffh) < (0f01h + BANKA_END)))
+                          M       if (((OSCTUNE) & 0f00h) != (PREV_BANK << 8))
+                          M         movlb   high (OSCTUNE)
+                          M PREV_BANK = high (OSCTUNE)
+                          M       endif
+                          M     endif
+                          M     if (low (040h) == 0)
+                          M         clrf    OSCTUNE
+                          M     else
+                          M       if (low (040h) == 255)
+                          M         setf    OSCTUNE
+                          M       else
+000058 0E40               M         movlw   low (040h)
+00005A 6E9B               M         movwf   OSCTUNE
+                          M       endif
+                          M     endif
+                      00283 
+                      00284 ; C:\USERS\ANDREW MCENTEE\DOCUMENTS\NTH SOLUTIONS\URICCHIO\PBP3\46K22 TMR0 TEST DEV-1.PBP       00042   
+                            INTCON = %00000000      'DISABLE ALL INTERRUPTS, ENABLED LATER IN INIT_TMR0 SUBROUTINE
+                      00285         MOVE?CB 000h, INTCON
+                          M         CHK?RP  INTCON
+                          M     if (((INTCON) & 8000h) != PREV_ALT)
+                          M       if ((INTCON) & 8000h)
+                          M         bsf     WDTCON, ADSHR
+                          M       else
+                          M         bcf     WDTCON, ADSHR
+                          M       endif
+                          M PREV_ALT = (INTCON) & 8000h
+                          M     endif
+                          M     if ((((INTCON) & 0fffh) > BANKA_END) & (((INTCON) & 0fffh) < (0f01h + BANKA_END)))
+                          M       if (((INTCON) & 0f00h) != (PREV_BANK << 8))
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE 10
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                          M         movlb   high (INTCON)
+                          M PREV_BANK = high (INTCON)
+                          M       endif
+                          M     endif
+                          M     if (low (000h) == 0)
+00005C 6AF2               M         clrf    INTCON
+                          M     else
+                          M       if (low (000h) == 255)
+                          M         setf    INTCON
+                          M       else
+                          M         movlw   low (000h)
+                          M         movwf   INTCON
+                          M       endif
+                          M     endif
+                      00286 
+                      00287 ; C:\USERS\ANDREW MCENTEE\DOCUMENTS\NTH SOLUTIONS\URICCHIO\PBP3\46K22 TMR0 TEST DEV-1.PBP       00043   
+                            WPUB = %00000000        'DISABLE PULLUPS ON PORTB
+                      00288         MOVE?CB 000h, WPUB
+                          M         CHK?RP  WPUB
+                          M     if (((WPUB)  & 8000h) != PREV_ALT)
+                          M       if ((WPUB)  & 8000h)
+                          M         bsf     WDTCON, ADSHR
+                          M       else
+                          M         bcf     WDTCON, ADSHR
+                          M       endif
+                          M PREV_ALT = (WPUB)  & 8000h
+                          M     endif
+                          M     if ((((WPUB)  & 0fffh) > BANKA_END) & (((WPUB)  & 0fffh) < (0f01h + BANKA_END)))
+                          M       if (((WPUB)  & 0f00h) != (PREV_BANK << 8))
+                          M         movlb   high (WPUB)
+                          M PREV_BANK = high (WPUB)
+                          M       endif
+                          M     endif
+                          M     if (low (000h) == 0)
+00005E 6A61               M         clrf    WPUB
+                          M     else
+                          M       if (low (000h) == 255)
+                          M         setf    WPUB
+                          M       else
+                          M         movlw   low (000h)
+                          M         movwf   WPUB
+                          M       endif
+                          M     endif
+                      00289 
+                      00290 ; C:\USERS\ANDREW MCENTEE\DOCUMENTS\NTH SOLUTIONS\URICCHIO\PBP3\46K22 TMR0 TEST DEV-1.PBP       00044   
+                            ANSELA = %00000000      'SET ALL A PORTS TO DIGITAL
+                      00291         MOVE?CB 000h, ANSELA
+                          M         CHK?RP  ANSELA
+                          M     if (((ANSELA) & 8000h) != PREV_ALT)
+                          M       if ((ANSELA) & 8000h)
+                          M         bsf     WDTCON, ADSHR
+                          M       else
+                          M         bcf     WDTCON, ADSHR
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE 11
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                          M       endif
+                          M PREV_ALT = (ANSELA) & 8000h
+                          M     endif
+                          M     if ((((ANSELA) & 0fffh) > BANKA_END) & (((ANSELA) & 0fffh) < (0f01h + BANKA_END)))
+                          M       if (((ANSELA) & 0f00h) != (PREV_BANK << 8))
+000060 010F               M         movlb   high (ANSELA)
+  0000000F                M PREV_BANK = high (ANSELA)
+                          M       endif
+                          M     endif
+                          M     if (low (000h) == 0)
+000062 6B38               M         clrf    ANSELA
+                          M     else
+                          M       if (low (000h) == 255)
+                          M         setf    ANSELA
+                          M       else
+                          M         movlw   low (000h)
+                          M         movwf   ANSELA
+                          M       endif
+                          M     endif
+                      00292 
+                      00293 ; C:\USERS\ANDREW MCENTEE\DOCUMENTS\NTH SOLUTIONS\URICCHIO\PBP3\46K22 TMR0 TEST DEV-1.PBP       00045   
+                            ANSELB = %00000000      'SET ALL B PORTS TO DIGITAL
+                      00294         MOVE?CB 000h, ANSELB
+                          M         CHK?RP  ANSELB
+                          M     if (((ANSELB) & 8000h) != PREV_ALT)
+                          M       if ((ANSELB) & 8000h)
+                          M         bsf     WDTCON, ADSHR
+                          M       else
+                          M         bcf     WDTCON, ADSHR
+                          M       endif
+                          M PREV_ALT = (ANSELB) & 8000h
+                          M     endif
+                          M     if ((((ANSELB) & 0fffh) > BANKA_END) & (((ANSELB) & 0fffh) < (0f01h + BANKA_END)))
+                          M       if (((ANSELB) & 0f00h) != (PREV_BANK << 8))
+                          M         movlb   high (ANSELB)
+                          M PREV_BANK = high (ANSELB)
+                          M       endif
+                          M     endif
+                          M     if (low (000h) == 0)
+000064 6B39               M         clrf    ANSELB
+                          M     else
+                          M       if (low (000h) == 255)
+                          M         setf    ANSELB
+                          M       else
+                          M         movlw   low (000h)
+                          M         movwf   ANSELB
+                          M       endif
+                          M     endif
+                      00295 
+                      00296 ; C:\USERS\ANDREW MCENTEE\DOCUMENTS\NTH SOLUTIONS\URICCHIO\PBP3\46K22 TMR0 TEST DEV-1.PBP       00046   
+                            ANSELC = %00000000      'SET ALL C PORTS TO DIGITAL
+                      00297         MOVE?CB 000h, ANSELC
+                          M         CHK?RP  ANSELC
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE 12
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                          M     if (((ANSELC) & 8000h) != PREV_ALT)
+                          M       if ((ANSELC) & 8000h)
+                          M         bsf     WDTCON, ADSHR
+                          M       else
+                          M         bcf     WDTCON, ADSHR
+                          M       endif
+                          M PREV_ALT = (ANSELC) & 8000h
+                          M     endif
+                          M     if ((((ANSELC) & 0fffh) > BANKA_END) & (((ANSELC) & 0fffh) < (0f01h + BANKA_END)))
+                          M       if (((ANSELC) & 0f00h) != (PREV_BANK << 8))
+                          M         movlb   high (ANSELC)
+                          M PREV_BANK = high (ANSELC)
+                          M       endif
+                          M     endif
+                          M     if (low (000h) == 0)
+000066 6B3A               M         clrf    ANSELC
+                          M     else
+                          M       if (low (000h) == 255)
+                          M         setf    ANSELC
+                          M       else
+                          M         movlw   low (000h)
+                          M         movwf   ANSELC
+                          M       endif
+                          M     endif
+                      00298 
+                      00299 ; C:\USERS\ANDREW MCENTEE\DOCUMENTS\NTH SOLUTIONS\URICCHIO\PBP3\46K22 TMR0 TEST DEV-1.PBP       00047   
+                            TRISE = %00000001       'DISABLE PULLUPS ON PORTE
+                      00300         MOVE?CB 001h, TRISE
+                          M         CHK?RP  TRISE
+                          M     if (((TRISE) & 8000h) != PREV_ALT)
+                          M       if ((TRISE) & 8000h)
+                          M         bsf     WDTCON, ADSHR
+                          M       else
+                          M         bcf     WDTCON, ADSHR
+                          M       endif
+                          M PREV_ALT = (TRISE) & 8000h
+                          M     endif
+                          M     if ((((TRISE) & 0fffh) > BANKA_END) & (((TRISE) & 0fffh) < (0f01h + BANKA_END)))
+                          M       if (((TRISE) & 0f00h) != (PREV_BANK << 8))
+                          M         movlb   high (TRISE)
+                          M PREV_BANK = high (TRISE)
+                          M       endif
+                          M     endif
+                          M     if (low (001h) == 0)
+                          M         clrf    TRISE
+                          M     else
+                          M       if (low (001h) == 255)
+                          M         setf    TRISE
+                          M       else
+000068 0E01               M         movlw   low (001h)
+00006A 6E96               M         movwf   TRISE
+                          M       endif
+                          M     endif
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE 13
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00301 ; C:\USERS\ANDREW MCENTEE\DOCUMENTS\NTH SOLUTIONS\URICCHIO\PBP3\46K22 TMR0 TEST DEV-1.PBP       00053   
+                            TMR0_TICK_THRESHOLD     CON     33333       'THIS IS THE NUMBER THAT TMR0 WILL COUNT TO BEFORE R
+                      00302 
+                      00303 ; C:\USERS\ANDREW MCENTEE\DOCUMENTS\NTH SOLUTIONS\URICCHIO\PBP3\46K22 TMR0 TEST DEV-1.PBP       00057   
+                            INIT:
+                      00304 
+                      00305         LABEL?L _INIT   
+                          M         RST?RP
+                          M     if (PREV_ALT != 0)
+                          M         bcf     WDTCON, ADSHR
+                          M PREV_ALT = 0
+                          M     endif
+                          M     if (PREV_BANK != 0)
+00006C 0100               M         movlb   0
+  00000000                M PREV_BANK = 0
+                          M     endif
+                          M     ifdef PM_USED
+                          M         LALL
+                          M _INIT
+                          M         XALL
+                          M     else
+00006E                    M _INIT
+                          M     endif
+                      00306 
+                      00307 ; C:\USERS\ANDREW MCENTEE\DOCUMENTS\NTH SOLUTIONS\URICCHIO\PBP3\46K22 TMR0 TEST DEV-1.PBP       00058   
+                                ON interrupt goto INTERRUPT_HANDLER              'SPECIFIES THE SUBROUTINE TO EXECUTE WHEN A
+                      00308         ONINT?LL        _INTERRUPT_HANDLER, L00001
+  0000                    M     local label
+00006E 8EF2               M         bsf     INTCON, GIE
+000070 D004               M         bra     label
+000072 BEF2               M L00001  btfsc   INTCON, GIE
+000074 0012               M         return
+                          M         L?GOTO  _INTERRUPT_HANDLER
+                          M     ifdef USE_LINKER
+                          M         CLRWDT?
+                          M     else
+                          M       if ($ == (_INTERRUPT_HANDLER))
+                          M         CLRWDT?
+                          M       endif
+                          M     endif
+                          M 
+                          M         RST?RP
+                          M     if (PREV_ALT != 0)
+                          M         bcf     WDTCON, ADSHR
+                          M PREV_ALT = 0
+                          M     endif
+                          M     if (PREV_BANK != 0)
+                          M         movlb   0
+                          M PREV_BANK = 0
+                          M     endif
+                          M 
+                          M     ifdef USE_LINKER
+                          M         goto    _INTERRUPT_HANDLER
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE 14
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                          M     else
+                          M       if ((_INTERRUPT_HANDLER) < 1)
+                          M         goto    _INTERRUPT_HANDLER
+                          M       else
+                          M         if ((_INTERRUPT_HANDLER) > $)
+000076 EF4D F000          M         goto    _INTERRUPT_HANDLER
+                          M         else
+                          M           if ((_INTERRUPT_HANDLER) < ($ - 3ffh))
+                          M         goto    _INTERRUPT_HANDLER
+                          M           else
+                          M         bra     _INTERRUPT_HANDLER
+                          M           endif
+                          M         endif
+                          M       endif
+                          M     endif
+00007A                    M label
+                      00309 
+                      00310 ; C:\USERS\ANDREW MCENTEE\DOCUMENTS\NTH SOLUTIONS\URICCHIO\PBP3\46K22 TMR0 TEST DEV-1.PBP       00059   
+                                INTCON = %10100000                               'ENABLES GLOBAL INTERRUPTS AND TMR0 INTERRU
+                      00311         ICALL?L L00001
+                          M         L?CALL  L00001
+                          M         RST?RP
+                          M     if (PREV_ALT != 0)
+                          M         bcf     WDTCON, ADSHR
+                          M PREV_ALT = 0
+                          M     endif
+                          M     if (PREV_BANK != 0)
+                          M         movlb   0
+                          M PREV_BANK = 0
+                          M     endif
+                          M 
+                          M     ifdef USE_LINKER
+                          M         call    L00001
+                          M     else
+                          M       if ((L00001) < 1)
+                          M         call    L00001
+                          M       else
+                          M         if ((L00001) > $)
+                          M         call    L00001
+                          M         else
+                          M           if ((L00001) < ($ - 3ffh))
+                          M         call    L00001
+                          M           else
+00007A DFFB               M         rcall   L00001
+                          M           endif
+                          M         endif
+                          M       endif
+                          M     endif
+                      00312         MOVE?CB 0A0h, INTCON
+                          M         CHK?RP  INTCON
+                          M     if (((INTCON) & 8000h) != PREV_ALT)
+                          M       if ((INTCON) & 8000h)
+                          M         bsf     WDTCON, ADSHR
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE 15
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                          M       else
+                          M         bcf     WDTCON, ADSHR
+                          M       endif
+                          M PREV_ALT = (INTCON) & 8000h
+                          M     endif
+                          M     if ((((INTCON) & 0fffh) > BANKA_END) & (((INTCON) & 0fffh) < (0f01h + BANKA_END)))
+                          M       if (((INTCON) & 0f00h) != (PREV_BANK << 8))
+                          M         movlb   high (INTCON)
+                          M PREV_BANK = high (INTCON)
+                          M       endif
+                          M     endif
+                          M     if (low (0A0h) == 0)
+                          M         clrf    INTCON
+                          M     else
+                          M       if (low (0A0h) == 255)
+                          M         setf    INTCON
+                          M       else
+00007C 0EA0               M         movlw   low (0A0h)
+00007E 6EF2               M         movwf   INTCON
+                          M       endif
+                          M     endif
+                      00313 
+                      00314 ; C:\USERS\ANDREW MCENTEE\DOCUMENTS\NTH SOLUTIONS\URICCHIO\PBP3\46K22 TMR0 TEST DEV-1.PBP       00060   
+                                disable
+                      00315         DISABLE?        
+                      00316 
+                      00317 ; C:\USERS\ANDREW MCENTEE\DOCUMENTS\NTH SOLUTIONS\URICCHIO\PBP3\46K22 TMR0 TEST DEV-1.PBP       00062   
+                                OUTPUT BLUE_LED
+                      00318         OUTPUT?T        _BLUE_LED
+                          M         MOVE?CT 0, ((PORTD) + 12h), 001h
+                          M         CHK?RP  ((PORTD) + 12h)
+                          M     if (((((PORTD) + 12h)) & 8000h) != PREV_ALT)
+                          M       if ((((PORTD) + 12h)) & 8000h)
+                          M         bsf     WDTCON, ADSHR
+                          M       else
+                          M         bcf     WDTCON, ADSHR
+                          M       endif
+                          M PREV_ALT = (((PORTD) + 12h)) & 8000h
+                          M     endif
+                          M     if ((((((PORTD) + 12h)) & 0fffh) > BANKA_END) & (((((PORTD) + 12h)) & 0fffh) < (0f01h + BANKA_END)))
+                          M       if (((((PORTD) + 12h)) & 0f00h) != (PREV_BANK << 8))
+                          M         movlb   high (((PORTD) + 12h))
+                          M PREV_BANK = high (((PORTD) + 12h))
+                          M       endif
+                          M     endif
+                          M     if (((0)   & 1) == 1)
+                          M         bsf     ((PORTD) + 12h), 001h
+                          M     else
+000080 9295               M         bcf     ((PORTD) + 12h), 001h
+                          M     endif
+                      00319 
+                      00320 ; C:\USERS\ANDREW MCENTEE\DOCUMENTS\NTH SOLUTIONS\URICCHIO\PBP3\46K22 TMR0 TEST DEV-1.PBP       00063   
+                                output INT_PIN 
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE 16
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00321         OUTPUT?T        _INT_PIN
+                          M         MOVE?CT 0, ((PORTD) + 12h), 000h
+                          M         CHK?RP  ((PORTD) + 12h)
+                          M     if (((((PORTD) + 12h)) & 8000h) != PREV_ALT)
+                          M       if ((((PORTD) + 12h)) & 8000h)
+                          M         bsf     WDTCON, ADSHR
+                          M       else
+                          M         bcf     WDTCON, ADSHR
+                          M       endif
+                          M PREV_ALT = (((PORTD) + 12h)) & 8000h
+                          M     endif
+                          M     if ((((((PORTD) + 12h)) & 0fffh) > BANKA_END) & (((((PORTD) + 12h)) & 0fffh) < (0f01h + BANKA_END)))
+                          M       if (((((PORTD) + 12h)) & 0f00h) != (PREV_BANK << 8))
+                          M         movlb   high (((PORTD) + 12h))
+                          M PREV_BANK = high (((PORTD) + 12h))
+                          M       endif
+                          M     endif
+                          M     if (((0)   & 1) == 1)
+                          M         bsf     ((PORTD) + 12h), 000h
+                          M     else
+000082 9095               M         bcf     ((PORTD) + 12h), 000h
+                          M     endif
+                      00322 
+                      00323 ; C:\USERS\ANDREW MCENTEE\DOCUMENTS\NTH SOLUTIONS\URICCHIO\PBP3\46K22 TMR0 TEST DEV-1.PBP       00065   
+                                INT_PIN = 0
+                      00324         MOVE?CT 000h, _INT_PIN
+                          M         CHK?RP  PORTD
+                          M     if (((PORTD) & 8000h) != PREV_ALT)
+                          M       if ((PORTD) & 8000h)
+                          M         bsf     WDTCON, ADSHR
+                          M       else
+                          M         bcf     WDTCON, ADSHR
+                          M       endif
+                          M PREV_ALT = (PORTD) & 8000h
+                          M     endif
+                          M     if ((((PORTD) & 0fffh) > BANKA_END) & (((PORTD) & 0fffh) < (0f01h + BANKA_END)))
+                          M       if (((PORTD) & 0f00h) != (PREV_BANK << 8))
+                          M         movlb   high (PORTD)
+                          M PREV_BANK = high (PORTD)
+                          M       endif
+                          M     endif
+                          M     if (((000h) & 1) == 1)
+                          M         bsf     PORTD,  000h
+                          M     else
+000084 9083               M         bcf     PORTD,  000h
+                          M     endif
+                      00325 
+                      00326 ; C:\USERS\ANDREW MCENTEE\DOCUMENTS\NTH SOLUTIONS\URICCHIO\PBP3\46K22 TMR0 TEST DEV-1.PBP       00066   
+                                BLUE_LED = 1
+                      00327         MOVE?CT 001h, _BLUE_LED
+                          M         CHK?RP  PORTD
+                          M     if (((PORTD) & 8000h) != PREV_ALT)
+                          M       if ((PORTD) & 8000h)
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE 17
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                          M         bsf     WDTCON, ADSHR
+                          M       else
+                          M         bcf     WDTCON, ADSHR
+                          M       endif
+                          M PREV_ALT = (PORTD) & 8000h
+                          M     endif
+                          M     if ((((PORTD) & 0fffh) > BANKA_END) & (((PORTD) & 0fffh) < (0f01h + BANKA_END)))
+                          M       if (((PORTD) & 0f00h) != (PREV_BANK << 8))
+                          M         movlb   high (PORTD)
+                          M PREV_BANK = high (PORTD)
+                          M       endif
+                          M     endif
+                          M     if (((001h) & 1) == 1)
+000086 8283               M         bsf     PORTD,  001h
+                          M     else
+                          M         bcf     PORTD,  001h
+                          M     endif
+                      00328 
+                      00329 ; C:\USERS\ANDREW MCENTEE\DOCUMENTS\NTH SOLUTIONS\URICCHIO\PBP3\46K22 TMR0 TEST DEV-1.PBP       00067   
+                                PAUSE 100
+                      00330         PAUSE?C 064h
+                          M     if (((064h) >> 8) == 0)
+                          M         MOVE?CA 064h
+000088 0E64               M         movlw   low (064h)
+                          M         L?CALL  PAUSE
+                          M         RST?RP
+                          M     if (PREV_ALT != 0)
+                          M         bcf     WDTCON, ADSHR
+                          M PREV_ALT = 0
+                          M     endif
+                          M     if (PREV_BANK != 0)
+                          M         movlb   0
+                          M PREV_BANK = 0
+                          M     endif
+                          M 
+                          M     ifdef USE_LINKER
+                          M         call    PAUSE
+                          M     else
+                          M       if ((PAUSE) < 1)
+                          M         call    PAUSE
+                          M       else
+                          M         if ((PAUSE) > $)
+                          M         call    PAUSE
+                          M         else
+                          M           if ((PAUSE) < ($ - 3ffh))
+                          M         call    PAUSE
+                          M           else
+00008A DFC7               M         rcall   PAUSE
+                          M           endif
+                          M         endif
+                          M       endif
+                          M     endif
+                          M     else
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE 18
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                          M         MOVE?CB (064h) >> 8, R1 + 1
+                          M         MOVE?CA low (064h)
+                          M         L?CALL  PAUSEL
+                          M     endif
+                      00331 
+                      00332 ; C:\USERS\ANDREW MCENTEE\DOCUMENTS\NTH SOLUTIONS\URICCHIO\PBP3\46K22 TMR0 TEST DEV-1.PBP       00068   
+                                BLUE_LED = 0
+                      00333         MOVE?CT 000h, _BLUE_LED
+                          M         CHK?RP  PORTD
+                          M     if (((PORTD) & 8000h) != PREV_ALT)
+                          M       if ((PORTD) & 8000h)
+                          M         bsf     WDTCON, ADSHR
+                          M       else
+                          M         bcf     WDTCON, ADSHR
+                          M       endif
+                          M PREV_ALT = (PORTD) & 8000h
+                          M     endif
+                          M     if ((((PORTD) & 0fffh) > BANKA_END) & (((PORTD) & 0fffh) < (0f01h + BANKA_END)))
+                          M       if (((PORTD) & 0f00h) != (PREV_BANK << 8))
+                          M         movlb   high (PORTD)
+                          M PREV_BANK = high (PORTD)
+                          M       endif
+                          M     endif
+                          M     if (((000h) & 1) == 1)
+                          M         bsf     PORTD,  001h
+                          M     else
+00008C 9283               M         bcf     PORTD,  001h
+                          M     endif
+                      00334 
+                      00335 ; C:\USERS\ANDREW MCENTEE\DOCUMENTS\NTH SOLUTIONS\URICCHIO\PBP3\46K22 TMR0 TEST DEV-1.PBP       00069   
+                            MAIN:    
+                      00336 
+                      00337         LABEL?L _MAIN   
+                          M         RST?RP
+                          M     if (PREV_ALT != 0)
+                          M         bcf     WDTCON, ADSHR
+                          M PREV_ALT = 0
+                          M     endif
+                          M     if (PREV_BANK != 0)
+                          M         movlb   0
+                          M PREV_BANK = 0
+                          M     endif
+                          M     ifdef PM_USED
+                          M         LALL
+                          M _MAIN
+                          M         XALL
+                          M     else
+00008E                    M _MAIN
+                          M     endif
+                      00338 
+                      00339 ; C:\USERS\ANDREW MCENTEE\DOCUMENTS\NTH SOLUTIONS\URICCHIO\PBP3\46K22 TMR0 TEST DEV-1.PBP       00070   
+                                enable
+                      00340         ENABLE? 
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE 19
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00341 
+                      00342 ; C:\USERS\ANDREW MCENTEE\DOCUMENTS\NTH SOLUTIONS\URICCHIO\PBP3\46K22 TMR0 TEST DEV-1.PBP       00071   
+                                GOSUB INIT_TMR0                           'INITIALIZE TMR0 VALUES FOR GIVEN SAMPLE RATE
+                      00343         ICALL?L L00001
+                          M         L?CALL  L00001
+                          M         RST?RP
+                          M     if (PREV_ALT != 0)
+                          M         bcf     WDTCON, ADSHR
+                          M PREV_ALT = 0
+                          M     endif
+                          M     if (PREV_BANK != 0)
+                          M         movlb   0
+                          M PREV_BANK = 0
+                          M     endif
+                          M 
+                          M     ifdef USE_LINKER
+                          M         call    L00001
+                          M     else
+                          M       if ((L00001) < 1)
+                          M         call    L00001
+                          M       else
+                          M         if ((L00001) > $)
+                          M         call    L00001
+                          M         else
+                          M           if ((L00001) < ($ - 3ffh))
+                          M         call    L00001
+                          M           else
+00008E DFF1               M         rcall   L00001
+                          M           endif
+                          M         endif
+                          M       endif
+                          M     endif
+                      00344         GOSUB?L _INIT_TMR0
+  0000                    M     local dlabel
+                          M     ifdef DEBUG_STACK
+                          M         CHK?RP  DEBUG_STACK
+                          M       ifdef DEBUG_STACK_ADDR
+                          M         bcf     STATUS, C
+                          M         rlcf    DEBUG_STACK, W
+                          M         addlw   DEBUG_STACK_ADDR
+                          M         movwf   FSR0L
+                          M         clrf    FSR0H
+                          M         movlw   low (dlabel)
+                          M         movwf   POSTINC0
+                          M         movlw   high (dlabel)
+                          M         movwf   INDF0
+                          M       endif
+                          M         incf    DEBUG_STACK, F
+                          M     endif
+                          M         L?CALL  _INIT_TMR0
+                          M         RST?RP
+                          M     if (PREV_ALT != 0)
+                          M         bcf     WDTCON, ADSHR
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE 20
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                          M PREV_ALT = 0
+                          M     endif
+                          M     if (PREV_BANK != 0)
+                          M         movlb   0
+                          M PREV_BANK = 0
+                          M     endif
+                          M 
+                          M     ifdef USE_LINKER
+                          M         call    _INIT_TMR0
+                          M     else
+                          M       if ((_INIT_TMR0) < 1)
+                          M         call    _INIT_TMR0
+                          M       else
+                          M         if ((_INIT_TMR0) > $)
+000090 EC55 F000          M         call    _INIT_TMR0
+                          M         else
+                          M           if ((_INIT_TMR0) < ($ - 3ffh))
+                          M         call    _INIT_TMR0
+                          M           else
+                          M         rcall   _INIT_TMR0
+                          M           endif
+                          M         endif
+                          M       endif
+                          M     endif
+000094                    M dlabel
+                      00345 
+                      00346 ; C:\USERS\ANDREW MCENTEE\DOCUMENTS\NTH SOLUTIONS\URICCHIO\PBP3\46K22 TMR0 TEST DEV-1.PBP       00072   
+                                while(1)
+                      00347         ICALL?L L00001
+                          M         L?CALL  L00001
+                          M         RST?RP
+                          M     if (PREV_ALT != 0)
+                          M         bcf     WDTCON, ADSHR
+                          M PREV_ALT = 0
+                          M     endif
+                          M     if (PREV_BANK != 0)
+                          M         movlb   0
+                          M PREV_BANK = 0
+                          M     endif
+                          M 
+                          M     ifdef USE_LINKER
+                          M         call    L00001
+                          M     else
+                          M       if ((L00001) < 1)
+                          M         call    L00001
+                          M       else
+                          M         if ((L00001) > $)
+                          M         call    L00001
+                          M         else
+                          M           if ((L00001) < ($ - 3ffh))
+                          M         call    L00001
+                          M           else
+000094 DFEE               M         rcall   L00001
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE 21
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                          M           endif
+                          M         endif
+                          M       endif
+                          M     endif
+                      00348         LABEL?L L00002  
+                          M         RST?RP
+                          M     if (PREV_ALT != 0)
+                          M         bcf     WDTCON, ADSHR
+                          M PREV_ALT = 0
+                          M     endif
+                          M     if (PREV_BANK != 0)
+                          M         movlb   0
+                          M PREV_BANK = 0
+                          M     endif
+                          M     ifdef PM_USED
+                          M         LALL
+                          M L00002
+                          M         XALL
+                          M     else
+000096                    M L00002
+                          M     endif
+                      00349         CMPF?CL 001h, L00003
+                          M     if ((001h) == 0)
+                          M         L?GOTO  L00003
+                          M     endif
+                      00350 
+                      00351 ; C:\USERS\ANDREW MCENTEE\DOCUMENTS\NTH SOLUTIONS\URICCHIO\PBP3\46K22 TMR0 TEST DEV-1.PBP       00073   
+                                    wend
+                      00352         ICALL?L L00001
+                          M         L?CALL  L00001
+                          M         RST?RP
+                          M     if (PREV_ALT != 0)
+                          M         bcf     WDTCON, ADSHR
+                          M PREV_ALT = 0
+                          M     endif
+                          M     if (PREV_BANK != 0)
+                          M         movlb   0
+                          M PREV_BANK = 0
+                          M     endif
+                          M 
+                          M     ifdef USE_LINKER
+                          M         call    L00001
+                          M     else
+                          M       if ((L00001) < 1)
+                          M         call    L00001
+                          M       else
+                          M         if ((L00001) > $)
+                          M         call    L00001
+                          M         else
+                          M           if ((L00001) < ($ - 3ffh))
+                          M         call    L00001
+                          M           else
+000096 DFED               M         rcall   L00001
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE 22
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                          M           endif
+                          M         endif
+                          M       endif
+                          M     endif
+                      00353         GOTO?L  L00002
+                          M         L?GOTO  L00002
+                          M     ifdef USE_LINKER
+                          M         CLRWDT?
+                          M     else
+                          M       if ($ == (L00002))
+                          M         CLRWDT?
+                          M       endif
+                          M     endif
+                          M 
+                          M         RST?RP
+                          M     if (PREV_ALT != 0)
+                          M         bcf     WDTCON, ADSHR
+                          M PREV_ALT = 0
+                          M     endif
+                          M     if (PREV_BANK != 0)
+                          M         movlb   0
+                          M PREV_BANK = 0
+                          M     endif
+                          M 
+                          M     ifdef USE_LINKER
+                          M         goto    L00002
+                          M     else
+                          M       if ((L00002) < 1)
+                          M         goto    L00002
+                          M       else
+                          M         if ((L00002) > $)
+                          M         goto    L00002
+                          M         else
+                          M           if ((L00002) < ($ - 3ffh))
+                          M         goto    L00002
+                          M           else
+000098 D7FE               M         bra     L00002
+                          M           endif
+                          M         endif
+                          M       endif
+                          M     endif
+                      00354         LABEL?L L00003  
+                          M         RST?RP
+                          M     if (PREV_ALT != 0)
+                          M         bcf     WDTCON, ADSHR
+                          M PREV_ALT = 0
+                          M     endif
+                          M     if (PREV_BANK != 0)
+                          M         movlb   0
+                          M PREV_BANK = 0
+                          M     endif
+                          M     ifdef PM_USED
+                          M         LALL
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE 23
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                          M L00003
+                          M         XALL
+                          M     else
+00009A                    M L00003
+                          M     endif
+                      00355 
+                      00356 ; C:\USERS\ANDREW MCENTEE\DOCUMENTS\NTH SOLUTIONS\URICCHIO\PBP3\46K22 TMR0 TEST DEV-1.PBP       00076   
+                            disable
+                      00357         DISABLE?        
+                      00358 
+                      00359 ; C:\USERS\ANDREW MCENTEE\DOCUMENTS\NTH SOLUTIONS\URICCHIO\PBP3\46K22 TMR0 TEST DEV-1.PBP       00077   
+                            INTERRUPT_HANDLER:  '**NOTE: YOU CANNOT EXECUTE A SUBROUTINE WITHIN THE INTERRUPT HANDLER
+                      00360 
+                      00361         LABEL?L _INTERRUPT_HANDLER      
+                          M         RST?RP
+                          M     if (PREV_ALT != 0)
+                          M         bcf     WDTCON, ADSHR
+                          M PREV_ALT = 0
+                          M     endif
+                          M     if (PREV_BANK != 0)
+                          M         movlb   0
+                          M PREV_BANK = 0
+                          M     endif
+                          M     ifdef PM_USED
+                          M         LALL
+                          M _INTERRUPT_HANDLER
+                          M         XALL
+                          M     else
+00009A                    M _INTERRUPT_HANDLER
+                          M     endif
+                      00362 
+                      00363 ; C:\USERS\ANDREW MCENTEE\DOCUMENTS\NTH SOLUTIONS\URICCHIO\PBP3\46K22 TMR0 TEST DEV-1.PBP       00078   
+                                TMR0H = (65535 - TMR0_TICK_THRESHOLD) / 256     'SET HIGH BYTE OF TMR0 VALUE SO IT OVERFLOWS
+                      00364         MOVE?CB 07Dh, TMR0H
+                          M         CHK?RP  TMR0H
+                          M     if (((TMR0H) & 8000h) != PREV_ALT)
+                          M       if ((TMR0H) & 8000h)
+                          M         bsf     WDTCON, ADSHR
+                          M       else
+                          M         bcf     WDTCON, ADSHR
+                          M       endif
+                          M PREV_ALT = (TMR0H) & 8000h
+                          M     endif
+                          M     if ((((TMR0H) & 0fffh) > BANKA_END) & (((TMR0H) & 0fffh) < (0f01h + BANKA_END)))
+                          M       if (((TMR0H) & 0f00h) != (PREV_BANK << 8))
+                          M         movlb   high (TMR0H)
+                          M PREV_BANK = high (TMR0H)
+                          M       endif
+                          M     endif
+                          M     if (low (07Dh) == 0)
+                          M         clrf    TMR0H
+                          M     else
+                          M       if (low (07Dh) == 255)
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE 24
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                          M         setf    TMR0H
+                          M       else
+00009A 0E7D               M         movlw   low (07Dh)
+00009C 6ED7               M         movwf   TMR0H
+                          M       endif
+                          M     endif
+                      00365 
+                      00366 ; C:\USERS\ANDREW MCENTEE\DOCUMENTS\NTH SOLUTIONS\URICCHIO\PBP3\46K22 TMR0 TEST DEV-1.PBP       00079   
+                                TMR0L = (65535 - TMR0_TICK_THRESHOLD) // 256    'SET LOW BYTE OF TMR0 VALUE SO IT OVERFLOWS 
+                      00367         MOD?CCB 07DCAh, 00100h, TMR0L
+                          M         MOVE?CB (07DCAh) % (00100h), TMR0L
+                          M         CHK?RP  TMR0L
+                          M     if (((TMR0L) & 8000h) != PREV_ALT)
+                          M       if ((TMR0L) & 8000h)
+                          M         bsf     WDTCON, ADSHR
+                          M       else
+                          M         bcf     WDTCON, ADSHR
+                          M       endif
+                          M PREV_ALT = (TMR0L) & 8000h
+                          M     endif
+                          M     if ((((TMR0L) & 0fffh) > BANKA_END) & (((TMR0L) & 0fffh) < (0f01h + BANKA_END)))
+                          M       if (((TMR0L) & 0f00h) != (PREV_BANK << 8))
+                          M         movlb   high (TMR0L)
+                          M PREV_BANK = high (TMR0L)
+                          M       endif
+                          M     endif
+                          M     if (low ((07DCAh) % (00100h)) == 0)
+                          M         clrf    TMR0L
+                          M     else
+                          M       if (low ((07DCAh) % (00100h)) == 255)
+                          M         setf    TMR0L
+                          M       else
+00009E 0ECA               M         movlw   low ((07DCAh) % (00100h))
+0000A0 6ED6               M         movwf   TMR0L
+                          M       endif
+                          M     endif
+                      00368 
+                      00369 ; C:\USERS\ANDREW MCENTEE\DOCUMENTS\NTH SOLUTIONS\URICCHIO\PBP3\46K22 TMR0 TEST DEV-1.PBP       00080   
+                                INTCON.2 = 0                                                       'RESET TMR0 OVERFLOW INTE
+                      00370         MOVE?CT 000h, _INTCON??2
+                          M         CHK?RP  INTCON
+                          M     if (((INTCON) & 8000h) != PREV_ALT)
+                          M       if ((INTCON) & 8000h)
+                          M         bsf     WDTCON, ADSHR
+                          M       else
+                          M         bcf     WDTCON, ADSHR
+                          M       endif
+                          M PREV_ALT = (INTCON) & 8000h
+                          M     endif
+                          M     if ((((INTCON) & 0fffh) > BANKA_END) & (((INTCON) & 0fffh) < (0f01h + BANKA_END)))
+                          M       if (((INTCON) & 0f00h) != (PREV_BANK << 8))
+                          M         movlb   high (INTCON)
+                          M PREV_BANK = high (INTCON)
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE 25
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                          M       endif
+                          M     endif
+                          M     if (((000h) & 1) == 1)
+                          M         bsf     INTCON, 002h
+                          M     else
+0000A2 94F2               M         bcf     INTCON, 002h
+                          M     endif
+                      00371 
+                      00372 ; C:\USERS\ANDREW MCENTEE\DOCUMENTS\NTH SOLUTIONS\URICCHIO\PBP3\46K22 TMR0 TEST DEV-1.PBP       00081   
+                                INT_pin = 1
+                      00373         MOVE?CT 001h, _INT_PIN
+                          M         CHK?RP  PORTD
+                          M     if (((PORTD) & 8000h) != PREV_ALT)
+                          M       if ((PORTD) & 8000h)
+                          M         bsf     WDTCON, ADSHR
+                          M       else
+                          M         bcf     WDTCON, ADSHR
+                          M       endif
+                          M PREV_ALT = (PORTD) & 8000h
+                          M     endif
+                          M     if ((((PORTD) & 0fffh) > BANKA_END) & (((PORTD) & 0fffh) < (0f01h + BANKA_END)))
+                          M       if (((PORTD) & 0f00h) != (PREV_BANK << 8))
+                          M         movlb   high (PORTD)
+                          M PREV_BANK = high (PORTD)
+                          M       endif
+                          M     endif
+                          M     if (((001h) & 1) == 1)
+0000A4 8083               M         bsf     PORTD,  000h
+                          M     else
+                          M         bcf     PORTD,  000h
+                          M     endif
+                      00374 
+                      00375 ; C:\USERS\ANDREW MCENTEE\DOCUMENTS\NTH SOLUTIONS\URICCHIO\PBP3\46K22 TMR0 TEST DEV-1.PBP       00082   
+                                INT_PIN = 0
+                      00376         MOVE?CT 000h, _INT_PIN
+                          M         CHK?RP  PORTD
+                          M     if (((PORTD) & 8000h) != PREV_ALT)
+                          M       if ((PORTD) & 8000h)
+                          M         bsf     WDTCON, ADSHR
+                          M       else
+                          M         bcf     WDTCON, ADSHR
+                          M       endif
+                          M PREV_ALT = (PORTD) & 8000h
+                          M     endif
+                          M     if ((((PORTD) & 0fffh) > BANKA_END) & (((PORTD) & 0fffh) < (0f01h + BANKA_END)))
+                          M       if (((PORTD) & 0f00h) != (PREV_BANK << 8))
+                          M         movlb   high (PORTD)
+                          M PREV_BANK = high (PORTD)
+                          M       endif
+                          M     endif
+                          M     if (((000h) & 1) == 1)
+                          M         bsf     PORTD,  000h
+                          M     else
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE 26
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0000A6 9083               M         bcf     PORTD,  000h
+                          M     endif
+                      00377 
+                      00378 ; C:\USERS\ANDREW MCENTEE\DOCUMENTS\NTH SOLUTIONS\URICCHIO\PBP3\46K22 TMR0 TEST DEV-1.PBP       00083   
+                                resume     
+                      00379         RESUME? 
+                          M         RST?RP
+                          M     if (PREV_ALT != 0)
+                          M         bcf     WDTCON, ADSHR
+                          M PREV_ALT = 0
+                          M     endif
+                          M     if (PREV_BANK != 0)
+                          M         movlb   0
+                          M PREV_BANK = 0
+                          M     endif
+0000A8 0010               M         retfie
+                      00380 
+                      00381 ; C:\USERS\ANDREW MCENTEE\DOCUMENTS\NTH SOLUTIONS\URICCHIO\PBP3\46K22 TMR0 TEST DEV-1.PBP       00084   
+                            enable
+                      00382         ENABLE? 
+                      00383 
+                      00384 ; C:\USERS\ANDREW MCENTEE\DOCUMENTS\NTH SOLUTIONS\URICCHIO\PBP3\46K22 TMR0 TEST DEV-1.PBP       00086   
+                            INIT_TMR0:
+                      00385 
+                      00386         LABEL?L _INIT_TMR0      
+                          M         RST?RP
+                          M     if (PREV_ALT != 0)
+                          M         bcf     WDTCON, ADSHR
+                          M PREV_ALT = 0
+                          M     endif
+                          M     if (PREV_BANK != 0)
+                          M         movlb   0
+                          M PREV_BANK = 0
+                          M     endif
+                          M     ifdef PM_USED
+                          M         LALL
+                          M _INIT_TMR0
+                          M         XALL
+                          M     else
+0000AA                    M _INIT_TMR0
+                          M     endif
+                      00387 
+                      00388 ; C:\USERS\ANDREW MCENTEE\DOCUMENTS\NTH SOLUTIONS\URICCHIO\PBP3\46K22 TMR0 TEST DEV-1.PBP       00087   
+                                T0CON = %10000000                               'ENABLES TIMER0, SETS AS 16-BIT, SET CLKOUT 
+                      00389         ICALL?L L00001
+                          M         L?CALL  L00001
+                          M         RST?RP
+                          M     if (PREV_ALT != 0)
+                          M         bcf     WDTCON, ADSHR
+                          M PREV_ALT = 0
+                          M     endif
+                          M     if (PREV_BANK != 0)
+                          M         movlb   0
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE 27
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                          M PREV_BANK = 0
+                          M     endif
+                          M 
+                          M     ifdef USE_LINKER
+                          M         call    L00001
+                          M     else
+                          M       if ((L00001) < 1)
+                          M         call    L00001
+                          M       else
+                          M         if ((L00001) > $)
+                          M         call    L00001
+                          M         else
+                          M           if ((L00001) < ($ - 3ffh))
+                          M         call    L00001
+                          M           else
+0000AA DFE3               M         rcall   L00001
+                          M           endif
+                          M         endif
+                          M       endif
+                          M     endif
+                      00390         MOVE?CB 080h, T0CON
+                          M         CHK?RP  T0CON
+                          M     if (((T0CON) & 8000h) != PREV_ALT)
+                          M       if ((T0CON) & 8000h)
+                          M         bsf     WDTCON, ADSHR
+                          M       else
+                          M         bcf     WDTCON, ADSHR
+                          M       endif
+                          M PREV_ALT = (T0CON) & 8000h
+                          M     endif
+                          M     if ((((T0CON) & 0fffh) > BANKA_END) & (((T0CON) & 0fffh) < (0f01h + BANKA_END)))
+                          M       if (((T0CON) & 0f00h) != (PREV_BANK << 8))
+                          M         movlb   high (T0CON)
+                          M PREV_BANK = high (T0CON)
+                          M       endif
+                          M     endif
+                          M     if (low (080h) == 0)
+                          M         clrf    T0CON
+                          M     else
+                          M       if (low (080h) == 255)
+                          M         setf    T0CON
+                          M       else
+0000AC 0E80               M         movlw   low (080h)
+0000AE 6ED5               M         movwf   T0CON
+                          M       endif
+                          M     endif
+                      00391 
+                      00392 ; C:\USERS\ANDREW MCENTEE\DOCUMENTS\NTH SOLUTIONS\URICCHIO\PBP3\46K22 TMR0 TEST DEV-1.PBP       00090   
+                                TMR0H = (65535 - TMR0_TICK_THRESHOLD) / 256     'SET HIGH BYTE OF TMR0 VALUE SO IT OVERFLOWS
+                      00393         ICALL?L L00001
+                          M         L?CALL  L00001
+                          M         RST?RP
+                          M     if (PREV_ALT != 0)
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE 28
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                          M         bcf     WDTCON, ADSHR
+                          M PREV_ALT = 0
+                          M     endif
+                          M     if (PREV_BANK != 0)
+                          M         movlb   0
+                          M PREV_BANK = 0
+                          M     endif
+                          M 
+                          M     ifdef USE_LINKER
+                          M         call    L00001
+                          M     else
+                          M       if ((L00001) < 1)
+                          M         call    L00001
+                          M       else
+                          M         if ((L00001) > $)
+                          M         call    L00001
+                          M         else
+                          M           if ((L00001) < ($ - 3ffh))
+                          M         call    L00001
+                          M           else
+0000B0 DFE0               M         rcall   L00001
+                          M           endif
+                          M         endif
+                          M       endif
+                          M     endif
+                      00394         MOVE?CB 07Dh, TMR0H
+                          M         CHK?RP  TMR0H
+                          M     if (((TMR0H) & 8000h) != PREV_ALT)
+                          M       if ((TMR0H) & 8000h)
+                          M         bsf     WDTCON, ADSHR
+                          M       else
+                          M         bcf     WDTCON, ADSHR
+                          M       endif
+                          M PREV_ALT = (TMR0H) & 8000h
+                          M     endif
+                          M     if ((((TMR0H) & 0fffh) > BANKA_END) & (((TMR0H) & 0fffh) < (0f01h + BANKA_END)))
+                          M       if (((TMR0H) & 0f00h) != (PREV_BANK << 8))
+                          M         movlb   high (TMR0H)
+                          M PREV_BANK = high (TMR0H)
+                          M       endif
+                          M     endif
+                          M     if (low (07Dh) == 0)
+                          M         clrf    TMR0H
+                          M     else
+                          M       if (low (07Dh) == 255)
+                          M         setf    TMR0H
+                          M       else
+0000B2 0E7D               M         movlw   low (07Dh)
+0000B4 6ED7               M         movwf   TMR0H
+                          M       endif
+                          M     endif
+                      00395 
+                      00396 ; C:\USERS\ANDREW MCENTEE\DOCUMENTS\NTH SOLUTIONS\URICCHIO\PBP3\46K22 TMR0 TEST DEV-1.PBP       00091   
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE 29
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                                TMR0L = (65535 - TMR0_TICK_THRESHOLD) // 256    'SET LOW BYTE OF TMR0 VALUE SO IT OVERFLOWS 
+                      00397         ICALL?L L00001
+                          M         L?CALL  L00001
+                          M         RST?RP
+                          M     if (PREV_ALT != 0)
+                          M         bcf     WDTCON, ADSHR
+                          M PREV_ALT = 0
+                          M     endif
+                          M     if (PREV_BANK != 0)
+                          M         movlb   0
+                          M PREV_BANK = 0
+                          M     endif
+                          M 
+                          M     ifdef USE_LINKER
+                          M         call    L00001
+                          M     else
+                          M       if ((L00001) < 1)
+                          M         call    L00001
+                          M       else
+                          M         if ((L00001) > $)
+                          M         call    L00001
+                          M         else
+                          M           if ((L00001) < ($ - 3ffh))
+                          M         call    L00001
+                          M           else
+0000B6 DFDD               M         rcall   L00001
+                          M           endif
+                          M         endif
+                          M       endif
+                          M     endif
+                      00398         MOD?CCB 07DCAh, 00100h, TMR0L
+                          M         MOVE?CB (07DCAh) % (00100h), TMR0L
+                          M         CHK?RP  TMR0L
+                          M     if (((TMR0L) & 8000h) != PREV_ALT)
+                          M       if ((TMR0L) & 8000h)
+                          M         bsf     WDTCON, ADSHR
+                          M       else
+                          M         bcf     WDTCON, ADSHR
+                          M       endif
+                          M PREV_ALT = (TMR0L) & 8000h
+                          M     endif
+                          M     if ((((TMR0L) & 0fffh) > BANKA_END) & (((TMR0L) & 0fffh) < (0f01h + BANKA_END)))
+                          M       if (((TMR0L) & 0f00h) != (PREV_BANK << 8))
+                          M         movlb   high (TMR0L)
+                          M PREV_BANK = high (TMR0L)
+                          M       endif
+                          M     endif
+                          M     if (low ((07DCAh) % (00100h)) == 0)
+                          M         clrf    TMR0L
+                          M     else
+                          M       if (low ((07DCAh) % (00100h)) == 255)
+                          M         setf    TMR0L
+                          M       else
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE 30
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0000B8 0ECA               M         movlw   low ((07DCAh) % (00100h))
+0000BA 6ED6               M         movwf   TMR0L
+                          M       endif
+                          M     endif
+                      00399 
+                      00400 ; C:\USERS\ANDREW MCENTEE\DOCUMENTS\NTH SOLUTIONS\URICCHIO\PBP3\46K22 TMR0 TEST DEV-1.PBP       00092   
+                                INTCON.2 = 0    
+                      00401         ICALL?L L00001
+                          M         L?CALL  L00001
+                          M         RST?RP
+                          M     if (PREV_ALT != 0)
+                          M         bcf     WDTCON, ADSHR
+                          M PREV_ALT = 0
+                          M     endif
+                          M     if (PREV_BANK != 0)
+                          M         movlb   0
+                          M PREV_BANK = 0
+                          M     endif
+                          M 
+                          M     ifdef USE_LINKER
+                          M         call    L00001
+                          M     else
+                          M       if ((L00001) < 1)
+                          M         call    L00001
+                          M       else
+                          M         if ((L00001) > $)
+                          M         call    L00001
+                          M         else
+                          M           if ((L00001) < ($ - 3ffh))
+                          M         call    L00001
+                          M           else
+0000BC DFDA               M         rcall   L00001
+                          M           endif
+                          M         endif
+                          M       endif
+                          M     endif
+                      00402         MOVE?CT 000h, _INTCON??2
+                          M         CHK?RP  INTCON
+                          M     if (((INTCON) & 8000h) != PREV_ALT)
+                          M       if ((INTCON) & 8000h)
+                          M         bsf     WDTCON, ADSHR
+                          M       else
+                          M         bcf     WDTCON, ADSHR
+                          M       endif
+                          M PREV_ALT = (INTCON) & 8000h
+                          M     endif
+                          M     if ((((INTCON) & 0fffh) > BANKA_END) & (((INTCON) & 0fffh) < (0f01h + BANKA_END)))
+                          M       if (((INTCON) & 0f00h) != (PREV_BANK << 8))
+                          M         movlb   high (INTCON)
+                          M PREV_BANK = high (INTCON)
+                          M       endif
+                          M     endif
+                          M     if (((000h) & 1) == 1)
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE 31
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                          M         bsf     INTCON, 002h
+                          M     else
+0000BE 94F2               M         bcf     INTCON, 002h
+                          M     endif
+                      00403 
+                      00404 ; C:\USERS\ANDREW MCENTEE\DOCUMENTS\NTH SOLUTIONS\URICCHIO\PBP3\46K22 TMR0 TEST DEV-1.PBP       00093   
+                                RETURN
+                      00405         ICALL?L L00001
+                          M         L?CALL  L00001
+                          M         RST?RP
+                          M     if (PREV_ALT != 0)
+                          M         bcf     WDTCON, ADSHR
+                          M PREV_ALT = 0
+                          M     endif
+                          M     if (PREV_BANK != 0)
+                          M         movlb   0
+                          M PREV_BANK = 0
+                          M     endif
+                          M 
+                          M     ifdef USE_LINKER
+                          M         call    L00001
+                          M     else
+                          M       if ((L00001) < 1)
+                          M         call    L00001
+                          M       else
+                          M         if ((L00001) > $)
+                          M         call    L00001
+                          M         else
+                          M           if ((L00001) < ($ - 3ffh))
+                          M         call    L00001
+                          M           else
+0000C0 DFD8               M         rcall   L00001
+                          M           endif
+                          M         endif
+                          M       endif
+                          M     endif
+                      00406         RETURN? 
+                          M     ifdef DEBUG_STACK
+                          M         CHK?RP  DEBUG_STACK
+                          M         decf    DEBUG_STACK, F
+                          M     endif
+                          M         RST?RP
+                          M     if (PREV_ALT != 0)
+                          M         bcf     WDTCON, ADSHR
+                          M PREV_ALT = 0
+                          M     endif
+                          M     if (PREV_BANK != 0)
+                          M         movlb   0
+                          M PREV_BANK = 0
+                          M     endif
+0000C2 0012               M         return
+                      00407 
+                      00408         END
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE 32
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+A                                 00000000
+ABDEN                             00000000
+ABDOVF                            00000007
+ACCESS                            00000000
+ACKDT                             00000005
+ACKEN                             00000004
+ACKSTAT                           00000006
+ACKTIM                            00000007
+ACQT0                             00000003
+ACQT1                             00000004
+ACQT2                             00000005
+ADCMD                             00000000
+ADCON0                            00000FC2
+ADCON1                            00000FC1
+ADCON2                            00000FC0
+ADCS0                             00000000
+ADCS1                             00000001
+ADCS2                             00000002
+ADC_BITS                          00000008
+ADC_CHANNELS                      1
+ADC_CLOCK                         00000003
+ADC_SAMPLEUS                      00000032
+ADDEN                             00000003
+ADDEN1                            00000003
+ADDEN2                            00000003
+ADEN                              00000003
+ADFM                              00000007
+ADIE                              00000006
+ADIF                              00000006
+ADIP                              00000006
+ADON                              00000000
+ADRES                             00000FC3
+ADRESH                            00000FC4
+ADRESL                            00000FC3
+AHEN                              00000001
+AN0                               00000000
+AN1                               00000001
+AN10                              00000001
+AN11                              00000004
+AN12                              00000000
+AN13                              00000005
+AN14                              00000002
+AN15                              00000003
+AN16                              00000004
+AN17                              00000005
+AN18                              00000006
+AN19                              00000007
+AN2                               00000002
+AN20                              00000000
+AN21                              00000001
+AN22                              00000002
+AN23                              00000003
+AN24                              00000004
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE 33
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+AN25                              00000005
+AN26                              00000006
+AN27                              00000007
+AN3                               00000003
+AN4                               00000005
+AN5                               00000000
+AN6                               00000001
+AN7                               00000002
+AN8                               00000002
+AN9                               00000003
+ANSA0                             00000000
+ANSA1                             00000001
+ANSA2                             00000002
+ANSA3                             00000003
+ANSA5                             00000005
+ANSB0                             00000000
+ANSB1                             00000001
+ANSB2                             00000002
+ANSB3                             00000003
+ANSB4                             00000004
+ANSB5                             00000005
+ANSC2                             00000002
+ANSC3                             00000003
+ANSC4                             00000004
+ANSC5                             00000005
+ANSC6                             00000006
+ANSC7                             00000007
+ANSD0                             00000000
+ANSD1                             00000001
+ANSD2                             00000002
+ANSD3                             00000003
+ANSD4                             00000004
+ANSD5                             00000005
+ANSD6                             00000006
+ANSD7                             00000007
+ANSE0                             00000000
+ANSE1                             00000001
+ANSE2                             00000002
+ANSELA                            00000F38
+ANSELB                            00000F39
+ANSELC                            00000F3A
+ANSELD                            00000F3B
+ANSELE                            00000F3C
+BANK0_END                         000000FF
+BANK0_START                       00000060
+BANK10_END                        00000AFF
+BANK10_START                      00000A00
+BANK11_END                        00000BFF
+BANK11_START                      00000B00
+BANK12_END                        00000CFF
+BANK12_START                      00000C00
+BANK13_END                        00000DFF
+BANK13_START                      00000D00
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE 34
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+BANK14_END                        00000EFF
+BANK14_START                      00000E00
+BANK15_END                        00000F37
+BANK15_START                      00000F00
+BANK1_END                         000001FF
+BANK1_START                       00000100
+BANK2_END                         000002FF
+BANK2_START                       00000200
+BANK3_END                         000003FF
+BANK3_START                       00000300
+BANK4_END                         000004FF
+BANK4_START                       00000400
+BANK5_END                         000005FF
+BANK5_START                       00000500
+BANK6_END                         000006FF
+BANK6_START                       00000600
+BANK7_END                         000007FF
+BANK7_START                       00000700
+BANK8_END                         000008FF
+BANK8_START                       00000800
+BANK9_END                         000009FF
+BANK9_START                       00000900
+BANKA_END                         0000005F
+BANKA_START                       00000000
+BANKED                            00000001
+BAUD1CON                          00000FB8
+BAUD2CON                          00000F70
+BAUDCON                           00000FB8
+BAUDCON1                          00000FB8
+BAUDCON2                          00000F70
+BAUDCTL                           00000FB8
+BCL1IE                            00000003
+BCL1IF                            00000003
+BCL1IP                            00000003
+BCL2IE                            00000006
+BCL2IF                            00000006
+BCL2IP                            00000006
+BCLIE                             00000003
+BCLIF                             00000003
+BCLIP                             00000003
+BF                                00000000
+BGST                              00000005
+BGVST                             00000006
+BIT?FLIP                          
+BIT?GOTO                          
+BIT?R1                            
+BIT?R2                            
+BIT?W                             
+BLOCK_SIZE                        00000040
+BOEN                              00000004
+BOR                               00000000
+BRG16                             00000003
+BRGH                              00000002
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE 35
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+BRGH1                             00000002
+BRGH2                             00000002
+BSR                               00000FE0
+BUTTON_PAUSE                      0000000A
+C                                 00000000
+C12IN0M                           00000000
+C12IN0N                           00000000
+C12IN1M                           00000001
+C12IN1N                           00000001
+C12IN2M                           00000003
+C12IN2N                           00000003
+C12IN3M                           00000001
+C12IN3N                           00000001
+C1CH0                             00000000
+C1CH1                             00000001
+C1HYS                             00000003
+C1IE                              00000006
+C1IF                              00000006
+C1INP                             00000003
+C1IP                              00000006
+C1OE                              00000005
+C1ON                              00000007
+C1OUT_CM1CON                      00000006
+C1OUT_CM1CON0                     00000006
+C1OUT_PORTA                       00000004
+C1POL                             00000004
+C1R                               00000002
+C1RSEL                            00000005
+C1SP                              00000003
+C1SYNC                            00000001
+C1TSEL0                           00000000
+C1TSEL1                           00000001
+C2CH0                             00000000
+C2CH1                             00000001
+C2HYS                             00000002
+C2IE                              00000005
+C2IF                              00000005
+C2INP                             00000002
+C2IP                              00000005
+C2OE                              00000005
+C2ON                              00000007
+C2OUT_CM2CON                      00000006
+C2OUT_CM2CON0                     00000006
+C2OUT_PORTA                       00000005
+C2POL                             00000004
+C2R                               00000002
+C2RSEL                            00000004
+C2SP                              00000003
+C2SYNC                            00000000
+C2TSEL0                           00000003
+C2TSEL1                           00000004
+C3TSEL0                           00000006
+C3TSEL1                           00000007
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE 36
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+C4TSEL0                           00000000
+C4TSEL1                           00000001
+C5TSEL0                           00000002
+C5TSEL1                           00000003
+CCP1                              00000002
+CCP1AS0                           00000004
+CCP1AS1                           00000005
+CCP1AS2                           00000006
+CCP1ASE                           00000007
+CCP1CON                           00000FBD
+CCP1IE                            00000002
+CCP1IF                            00000002
+CCP1IP                            00000002
+CCP1M0                            00000000
+CCP1M1                            00000001
+CCP1M2                            00000002
+CCP1M3                            00000003
+CCP1MD                            00000000
+CCP1_BIT                          00000002
+CCP1_REG                          00000F82
+CCP2AS                            00000F64
+CCP2AS0                           00000004
+CCP2AS1                           00000005
+CCP2AS2                           00000006
+CCP2ASE                           00000007
+CCP2CON                           00000F66
+CCP2IE                            00000000
+CCP2IF                            00000000
+CCP2IP                            00000000
+CCP2M0                            00000000
+CCP2M1                            00000001
+CCP2M2                            00000002
+CCP2M3                            00000003
+CCP2MD                            00000001
+CCP2_BIT                          00000001
+CCP2_PORTB                        00000003
+CCP2_PORTC                        00000001
+CCP2_REG                          00000F82
+CCP3AS                            00000F5B
+CCP3AS0                           00000004
+CCP3AS1                           00000005
+CCP3AS2                           00000006
+CCP3ASE                           00000007
+CCP3CON                           00000F5D
+CCP3IE                            00000000
+CCP3IF                            00000000
+CCP3IP                            00000000
+CCP3M0                            00000000
+CCP3M1                            00000001
+CCP3M2                            00000002
+CCP3M3                            00000003
+CCP3MD                            00000002
+CCP3_BIT                          00000000
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE 37
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+CCP3_PORTB                        00000005
+CCP3_PORTE                        00000000
+CCP3_REG                          00000000
+CCP4                              00000001
+CCP4CON                           00000F57
+CCP4IE                            00000001
+CCP4IF                            00000001
+CCP4IP                            00000001
+CCP4M0                            00000000
+CCP4M1                            00000001
+CCP4M2                            00000002
+CCP4M3                            00000003
+CCP4MD                            00000003
+CCP4_BIT                          00000003
+CCP4_REG                          00000000
+CCP5                              00000002
+CCP5CON                           00000F54
+CCP5IE                            00000002
+CCP5IF                            00000002
+CCP5IP                            00000002
+CCP5M0                            00000000
+CCP5M1                            00000001
+CCP5M2                            00000002
+CCP5M3                            00000003
+CCP5MD                            00000004
+CCP5_BIT                          00000004
+CCP5_REG                          00000000
+CCPR1                             00000FBE
+CCPR1H                            00000FBF
+CCPR1L                            00000FBE
+CCPR2                             00000F67
+CCPR2H                            00000F68
+CCPR2L                            00000F67
+CCPR3                             00000F5E
+CCPR3H                            00000F5F
+CCPR3L                            00000F5E
+CCPR4                             00000F58
+CCPR4H                            00000F59
+CCPR4L                            00000F58
+CCPR5                             00000F55
+CCPR5H                            00000F56
+CCPR5L                            00000F55
+CCPTMRS0                          00000F49
+CCPTMRS1                          00000F48
+CFGS                              00000006
+CHK?RP                            
+CHS0                              00000002
+CHS1                              00000003
+CHS2                              00000004
+CHS3                              00000005
+CHS4                              00000006
+CK                                00000006
+CK1                               00000006
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE 38
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+CK2                               00000006
+CKE                               00000006
+CKP                               00000004
+CKTXP                             00000004
+CLRWDT?                           
+CLRWDT?NOP                        
+CM12CON                           00000F77
+CM1CON                            00000F79
+CM1CON0                           00000F79
+CM2CON                            00000F78
+CM2CON0                           00000F78
+CM2CON1                           00000F77
+CMP1MD                            00000001
+CMP2MD                            00000002
+CMPF?CL                           
+CREN                              00000004
+CREN1                             00000004
+CREN2                             00000004
+CSRC                              00000007
+CSRC1                             00000007
+CSRC2                             00000007
+CTED1                             00000002
+CTED2                             00000003
+CTMUCON0                          00000F45
+CTMUCON1                          00000F44
+CTMUCONH                          00000F45
+CTMUCONL                          00000F44
+CTMUEN                            00000007
+CTMUICON                          00000F43
+CTMUICONH                         00000F43
+CTMUIE                            00000003
+CTMUIF                            00000003
+CTMUIP                            00000003
+CTMUMD                            00000003
+CTMUSIDL                          00000005
+CTPLS                             00000002
+CTTRIG                            00000000
+CVREF                             00000002
+D                                 00000005
+DACCON0                           00000F41
+DACCON1                           00000F40
+DACEN                             00000007
+DACLPS                            00000006
+DACNSS                            00000000
+DACOE                             00000005
+DACOUT                            00000002
+DACPSS0                           00000002
+DACPSS1                           00000003
+DACR0                             00000000
+DACR1                             00000001
+DACR2                             00000002
+DACR3                             00000003
+DACR4                             00000004
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE 39
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+DC                                00000001
+DC1B0                             00000004
+DC1B1                             00000005
+DC2B0                             00000004
+DC2B1                             00000005
+DC3B0                             00000004
+DC3B1                             00000005
+DC4B0                             00000004
+DC4B1                             00000005
+DC5B0                             00000004
+DC5B1                             00000005
+DDRA                              TRISA
+DDRB                              TRISB
+DDRC                              TRISC
+DDRD                              TRISD
+DDRE                              TRISE
+DEBUGIN_BIT                       00000000
+DEBUGIN_MODE                      00000001
+DEBUGIN_REG                       00000F81
+DEBUG_BAUD                        00000960
+DEBUG_BIT                         00000000
+DEBUG_DELAY                       0000019F
+DEBUG_MODE                        00000001
+DEBUG_REG                         00000F81
+DHEN                              00000000
+DISABLE?                          
+DONE                              00000001
+DT1                               00000007
+DT2                               00000007
+DTRXP                             00000005
+DUNN                              0000004A
+DUNN5                             0000004C
+DUNN_USED                         00000001
+D_A                               00000005
+D_NOT_A                           00000005
+ECCP1AS                           00000FB6
+ECCP2AS                           00000F64
+ECCP3AS                           00000F5B
+ECCPAS                            00000FB6
+ECCPAS0                           00000004
+ECCPAS1                           00000005
+ECCPAS2                           00000006
+ECCPASE                           00000007
+EDG1POL                           00000004
+EDG1SEL0                          00000002
+EDG1SEL1                          00000003
+EDG1STAT                          00000000
+EDG2POL                           00000007
+EDG2SEL0                          00000005
+EDG2SEL1                          00000006
+EDG2STAT                          00000001
+EDGEN                             00000003
+EDGSEQEN                          00000002
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE 40
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+EEADR                             00000FA9
+EEADR0                            00000000
+EEADR1                            00000001
+EEADR2                            00000002
+EEADR3                            00000003
+EEADR4                            00000004
+EEADR5                            00000005
+EEADR6                            00000006
+EEADR7                            00000007
+EEADR8                            00000000
+EEADR9                            00000001
+EEADRH                            00000FAA
+EECON1                            00000FA6
+EECON2                            00000FA7
+EEDATA                            00000FA8
+EEIE                              00000004
+EEIF                              00000004
+EEIP                              00000004
+EEPGD                             00000007
+EEPROM_START                      00F00000
+ENABLE?                           
+FAST                              00000001
+FERR                              00000002
+FERR1                             00000002
+FERR2                             00000002
+FLAGS                             00000000
+FLT0                              00000000
+FREE                              00000004
+FSR0                              00000000
+FSR0H                             00000FEA
+FSR0L                             00000FE9
+FSR1                              00000001
+FSR1H                             00000FE2
+FSR1L                             00000FE1
+FSR2                              00000002
+FSR2H                             00000FDA
+FSR2L                             00000FD9
+FVRCON                            00000F42
+FVREN                             00000007
+FVRS0                             00000004
+FVRS1                             00000005
+FVRST                             00000006
+GCEN                              00000007
+GIE                               00000007
+GIEH                              00000007
+GIEL                              00000006
+GIE_GIEH                          00000007
+GO                                00000001
+GOP                               00000001
+GOSUB?L                           
+GOTO?L                            
+GO_DONE                           00000001
+GO_NOT_DONE                       00000001
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE 41
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+HFIOFS                            00000002
+HLVDCON                           00000F9C
+HLVDEN                            00000004
+HLVDIE                            00000002
+HLVDIF                            00000002
+HLVDIN                            00000005
+HLVDIP                            00000002
+HLVDL0                            00000000
+HLVDL1                            00000001
+HLVDL2                            00000002
+HLVDL3                            00000003
+HSER2_BAUD                        00000960
+HSER2_BITS                        00000008
+HSER2_RCSTA                       00000090
+HSER2_SPBRG                       000000CF
+HSER2_TXSTA                       00000020
+HSER_BAUD                         00000960
+HSER_BITS                         00000008
+HSER_PORT                         00000001
+HSER_RCSTA                        00000090
+HSER_SPBRG                        000000CF
+HSER_TXSTA                        00000020
+I2CFIRSTFLAG                      FLAGS, 2
+I2CREADFLAG                       FLAGS, 3
+I2CSTOPFLAG                       FLAGS, 5
+I2CSTOPSTRFLAG                    FLAGS, 6
+I2CWRITEFLAG                      FLAGS, 4
+ICALL?L                           
+IDISSEN                           00000001
+IDLEN                             00000007
+INDF0                             00000FEF
+INDF1                             00000FE7
+INDF2                             00000FDF
+INIT                              00000050
+INT0                              00000000
+INT0E                             00000004
+INT0F                             00000001
+INT0IE                            00000004
+INT0IF                            00000001
+INT1                              00000001
+INT1E                             00000003
+INT1F                             00000000
+INT1IE                            00000003
+INT1IF                            00000000
+INT1IP                            00000006
+INT1P                             00000006
+INT2                              00000002
+INT2E                             00000004
+INT2F                             00000001
+INT2IE                            00000004
+INT2IF                            00000001
+INT2IP                            00000007
+INT2P                             00000007
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE 42
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+INTCON                            00000FF2
+INTCON2                           00000FF1
+INTCON3                           00000FF0
+INTEDG0                           00000006
+INTEDG1                           00000005
+INTEDG2                           00000004
+INTSRC                            00000007
+IOCB                              00000F62
+IOCB4                             00000004
+IOCB5                             00000005
+IOCB6                             00000006
+IOCB7                             00000007
+IOFS                              00000002
+IPEN                              00000007
+IPR1                              00000F9F
+IPR2                              00000FA2
+IPR3                              00000FA5
+IPR4                              00000F7C
+IPR5                              00000F7F
+IRCF0                             00000004
+IRCF1                             00000005
+IRCF2                             00000006
+IRNG0                             00000000
+IRNG1                             00000001
+IRVST                             00000005
+ITRIM0                            00000002
+ITRIM1                            00000003
+ITRIM2                            00000004
+ITRIM3                            00000005
+ITRIM4                            00000006
+ITRIM5                            00000007
+IVRST                             00000005
+KBI0                              00000004
+KBI1                              00000005
+KBI2                              00000006
+KBI3                              00000007
+L00001                            00000072
+L00002                            00000096
+L00003                            0000009A
+L?CALL                            
+L?GOTO                            
+LABEL?L                           
+LATA                              00000F89
+LATA0                             00000000
+LATA1                             00000001
+LATA2                             00000002
+LATA3                             00000003
+LATA4                             00000004
+LATA5                             00000005
+LATA6                             00000006
+LATA7                             00000007
+LATB                              00000F8A
+LATB0                             00000000
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE 43
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+LATB1                             00000001
+LATB2                             00000002
+LATB3                             00000003
+LATB4                             00000004
+LATB5                             00000005
+LATB6                             00000006
+LATB7                             00000007
+LATC                              00000F8B
+LATC0                             00000000
+LATC1                             00000001
+LATC2                             00000002
+LATC3                             00000003
+LATC4                             00000004
+LATC5                             00000005
+LATC6                             00000006
+LATC7                             00000007
+LATD                              00000F8C
+LATD0                             00000000
+LATD1                             00000001
+LATD2                             00000002
+LATD3                             00000003
+LATD4                             00000004
+LATD5                             00000005
+LATD6                             00000006
+LATD7                             00000007
+LATE                              00000F8D
+LATE0                             00000000
+LATE1                             00000001
+LATE2                             00000002
+LCDCDFLAG                         FLAGS, 0
+LCDINITFLAG                       FLAGS, 1
+LCD_BITS                          00000004
+LCD_COMMANDUS                     000007D0
+LCD_DATAUS                        00000032
+LCD_DBIT                          00000000
+LCD_DREG                          00000F80
+LCD_EBIT                          00000003
+LCD_EREG                          00000F81
+LCD_LINES                         00000002
+LCD_RSBIT                         00000004
+LCD_RSREG                         00000F80
+LCD_RWBIT                         00000004
+LCD_RWREG                         00000F80
+LFIOFS                            00000000
+LVDCON                            00000F9C
+LVDEN                             00000004
+LVDIE                             00000002
+LVDIF                             00000002
+LVDIN                             00000005
+LVDIP                             00000002
+LVDL0                             00000000
+LVDL1                             00000001
+LVDL2                             00000002
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE 44
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+LVDL3                             00000003
+LVV0                              00000000
+LVV1                              00000001
+LVV2                              00000002
+LVV3                              00000003
+MC1OUT                            00000007
+MC2OUT                            00000006
+MCLR                              00000003
+MFIOFS                            00000001
+MFIOSEL                           00000004
+MOD?CCB                           
+MOVE?AB                           
+MOVE?AT                           
+MOVE?AW                           
+MOVE?AWW                          
+MOVE?BA                           
+MOVE?BB                           
+MOVE?BT                           
+MOVE?BW                           
+MOVE?CA                           
+MOVE?CB                           
+MOVE?CT                           
+MOVE?CW                           
+MOVE?TA                           
+MOVE?TB                           
+MOVE?TT                           
+MOVE?TW                           
+MOVE?WA                           
+MOVE?WB                           
+MOVE?WT                           
+MOVE?WW                           
+MOVE?WWA                          
+MPASMX_USED                       00000001
+MSK0                              00000000
+MSK1                              00000001
+MSK2                              00000002
+MSK3                              00000003
+MSK4                              00000004
+MSK5                              00000005
+MSK6                              00000006
+MSK7                              00000007
+MSSP1MD                           00000006
+MSSP2MD                           00000007
+N                                 00000004
+NOT_A                             00000005
+NOT_ADDRESS                       00000005
+NOT_BOR                           00000000
+NOT_DONE                          00000001
+NOT_MCLR                          00000003
+NOT_PD                            00000002
+NOT_POR                           00000001
+NOT_RBPU                          00000007
+NOT_RI                            00000004
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE 45
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+NOT_SS                            00000005
+NOT_SS1                           00000005
+NOT_SS2                           00000003
+NOT_T1SYNC                        00000002
+NOT_T3SYNC                        00000002
+NOT_T5SYNC                        00000002
+NOT_TO                            00000003
+NOT_W                             00000002
+NOT_WRITE                         00000002
+NVCFG0                            00000000
+NVCFG1                            00000001
+OERR                              00000001
+OERR1                             00000001
+OERR2                             00000001
+ONINT?LL                          
+ONINT_USED                        00000001
+OSC                               32
+OSCCON                            00000FD3
+OSCCON2                           00000FD2
+OSCFIE                            00000007
+OSCFIF                            00000007
+OSCFIP                            00000007
+OSCTUNE                           00000F9B
+OSC_VALID                         00000001
+OSTS                              00000003
+OUTPUT?T                          
+OV                                00000003
+P                                 00000004
+P1A                               00000002
+P1B                               00000005
+P1C                               00000006
+P1D                               00000007
+P1DC0                             00000000
+P1DC1                             00000001
+P1DC2                             00000002
+P1DC3                             00000003
+P1DC4                             00000004
+P1DC5                             00000005
+P1DC6                             00000006
+P1M0                              00000006
+P1M1                              00000007
+P1RSEN                            00000007
+P1SSAC0                           00000002
+P1SSAC1                           00000003
+P1SSBD0                           00000000
+P1SSBD1                           00000001
+P2A_PORTB                         00000003
+P2A_PORTC                         00000001
+P2B_PORTC                         00000000
+P2B_PORTD                         00000002
+P2C                               00000003
+P2D                               00000004
+P2DC0                             00000000
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE 46
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+P2DC1                             00000001
+P2DC2                             00000002
+P2DC3                             00000003
+P2DC4                             00000004
+P2DC5                             00000005
+P2DC6                             00000006
+P2M0                              00000006
+P2M1                              00000007
+P2RSEN                            00000007
+P2SSAC0                           00000002
+P2SSAC1                           00000003
+P2SSBD0                           00000000
+P2SSBD1                           00000001
+P3A_PORTB                         00000005
+P3A_PORTE                         00000000
+P3B                               00000001
+P3DC0                             00000000
+P3DC1                             00000001
+P3DC2                             00000002
+P3DC3                             00000003
+P3DC4                             00000004
+P3DC5                             00000005
+P3DC6                             00000006
+P3M0                              00000006
+P3M1                              00000007
+P3RSEN                            00000007
+P3SSAC0                           00000002
+P3SSAC1                           00000003
+P3SSBD0                           00000000
+P3SSBD1                           00000001
+PAUSE                             0000001A
+PAUSE?C                           
+PAUSEL                            0000001C
+PAUSEUS                           00000034
+PAUSEUSL                          00000036
+PAUSEUS_USED                      00000001
+PAUSE_DELAY                       000003E7
+PAUSE_USED                        00000001
+PBP_HARDWAREDEF                   
+PBP_PATH                          C:\PROGRAM FILES (X86)\PBP3\
+PC                                00000FF9
+PCIE                              00000006
+PCL                               00000FF9
+PCLATH                            00000FFA
+PCLATU                            00000FFB
+PD                                00000002
+PDC0                              00000000
+PDC1                              00000001
+PDC2                              00000002
+PDC3                              00000003
+PDC4                              00000004
+PDC5                              00000005
+PDC6                              00000006
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE 47
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+PEIE                              00000006
+PEIE_GIEL                         00000006
+PEN                               00000002
+PGC                               00000006
+PGD                               00000007
+PIE1                              00000F9D
+PIE2                              00000FA0
+PIE3                              00000FA3
+PIE4                              00000F7A
+PIE5                              00000F7D
+PIR                               00000F9E
+PIR1                              00000F9E
+PIR2                              00000FA1
+PIR3                              00000FA4
+PIR4                              00000F7B
+PIR5                              00000F7E
+PLLEN                             00000006
+PLLRDY                            00000007
+PLUSW0                            00000FEB
+PLUSW1                            00000FE3
+PLUSW2                            00000FDB
+PMD0                              00000F3F
+PMD1                              00000F3E
+PMD2                              00000F3D
+POR                               00000001
+PORTA                             00000F80
+PORTB                             00000F81
+PORTC                             00000F82
+PORTD                             00000F83
+PORTE                             00000F84
+POSTDEC0                          00000FED
+POSTDEC1                          00000FE5
+POSTDEC2                          00000FDD
+POSTINC0                          00000FEE
+POSTINC1                          00000FE6
+POSTINC2                          00000FDE
+PR2                               00000FBB
+PR4                               00000F52
+PR6                               00000F4B
+PREINC0                           00000FEC
+PREINC1                           00000FE4
+PREINC2                           00000FDC
+PREV_ALT                          00000000
+PREV_BANK                         00000000
+PRISD                             00000002
+PROD                              00000FF3
+PRODH                             00000FF4
+PRODL                             00000FF3
+PRSEN                             00000007
+PSA                               00000003
+PSS1AC0                           00000002
+PSS1AC1                           00000003
+PSS1BD0                           00000000
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE 48
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+PSS1BD1                           00000001
+PSS2AC0                           00000002
+PSS2AC1                           00000003
+PSS2BD0                           00000000
+PSS2BD1                           00000001
+PSS3AC0                           00000002
+PSS3AC1                           00000003
+PSS3BD0                           00000000
+PSS3BD1                           00000001
+PSSAC0                            00000002
+PSSAC1                            00000003
+PSSBD0                            00000000
+PSSBD1                            00000001
+PSTR1CON                          00000FB9
+PSTR2CON                          00000F63
+PSTR3CON                          00000F5A
+PSTRCON                           00000FB9
+PVCFG0                            00000002
+PVCFG1                            00000003
+PWM1CON                           00000FB7
+PWM2CON                           00000F65
+PWM3CON                           00000F5C
+PWMCON                            00000FB7
+R                                 00000002
+R0                                00000002
+R1                                00000004
+R2                                00000006
+R3                                00000008
+R4                                0000000A
+R5                                0000000C
+R6                                0000000E
+R7                                00000010
+R8                                00000012
+RA0                               00000000
+RA1                               00000001
+RA2                               00000002
+RA3                               00000003
+RA4                               00000004
+RA5                               00000005
+RA6                               00000006
+RA7                               00000007
+RAM_BANKS                         00000010
+RAM_END                           00000F37
+RAM_START                         00000000
+RB0                               00000000
+RB1                               00000001
+RB2                               00000002
+RB3                               00000003
+RB4                               00000004
+RB5                               00000005
+RB6                               00000006
+RB7                               00000007
+RBIE                              00000003
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE 49
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+RBIF                              00000000
+RBIP                              00000000
+RBPU                              00000007
+RC0                               00000000
+RC1                               00000001
+RC1IE                             00000005
+RC1IF                             00000005
+RC1IP                             00000005
+RC1REG                            00000FAE
+RC1STA                            00000FAB
+RC2                               00000002
+RC2IE                             00000005
+RC2IF                             00000005
+RC2IP                             00000005
+RC2REG                            00000F74
+RC2STA                            00000F71
+RC3                               00000003
+RC4                               00000004
+RC5                               00000005
+RC6                               00000006
+RC7                               00000007
+RCEN                              00000003
+RCIDL                             00000006
+RCIE                              00000005
+RCIF                              00000005
+RCIP                              00000005
+RCON                              00000FD0
+RCREG                             00000FAE
+RCREG1                            00000FAE
+RCREG2                            00000F74
+RCSTA                             00000FAB
+RCSTA1                            00000FAB
+RCSTA2                            00000F71
+RD                                00000000
+RD0                               00000000
+RD1                               00000001
+RD16                              00000001
+RD2                               00000002
+RD3                               00000003
+RD4                               00000004
+RD5                               00000005
+RD6                               00000006
+RD7                               00000007
+RE0                               00000000
+RE1                               00000001
+RE2                               00000002
+RE3                               00000003
+RESET_ORG                         00000000
+RESUME?                           
+RETURN?                           
+RI                                00000004
+RM1                               00000014
+RM2                               00000015
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE 50
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+RR1                               00000016
+RR2                               00000017
+RS1                               00000018
+RS2                               00000019
+RSEN                              00000001
+RST?RP                            
+RX                                00000007
+RX1                               00000007
+RX2                               00000007
+RX9                               00000006
+RX91                              00000006
+RX92                              00000006
+RX9D                              00000000
+RX9D1                             00000000
+RX9D2                             00000000
+R_NOT_W                           00000002
+R_W                               00000002
+S                                 00000003
+SBCDE                             00000002
+SBOREN                            00000006
+SCIE                              00000005
+SCK                               00000003
+SCK1                              00000003
+SCK2                              00000000
+SCKP                              00000004
+SCL                               00000003
+SCL1                              00000003
+SCL2                              00000000
+SCS0                              00000000
+SCS1                              00000001
+SDA                               00000004
+SDA1                              00000004
+SDA2                              00000001
+SDAHT                             00000003
+SDI                               00000004
+SDI1                              00000004
+SDI2                              00000001
+SDO                               00000005
+SDO1                              00000005
+SDO2                              00000004
+SEN                               00000000
+SENDB                             00000003
+SENDB1                            00000003
+SENDB2                            00000003
+SLRA                              00000000
+SLRB                              00000001
+SLRC                              00000002
+SLRCON                            00000F60
+SLRD                              00000003
+SLRE                              00000004
+SMP                               00000007
+SOSCGO                            00000003
+SOSCRUN                           00000006
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE 51
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+SP0                               00000000
+SP1                               00000001
+SP1BRG                            00000FAF
+SP1BRGH                           00000FB0
+SP2                               00000002
+SP2BRG                            00000F75
+SP2BRGH                           00000F76
+SP3                               00000003
+SP4                               00000004
+SPBRG                             00000FAF
+SPBRG1                            00000FAF
+SPBRG2                            00000F75
+SPBRGH                            00000FB0
+SPBRGH1                           00000FB0
+SPBRGH2                           00000F76
+SPEN                              00000007
+SPEN1                             00000007
+SPEN2                             00000007
+SRCLK0                            00000004
+SRCLK1                            00000005
+SRCLK2                            00000006
+SRCON0                            00000F47
+SRCON1                            00000F46
+SREN                              00000005
+SREN1                             00000005
+SREN2                             00000005
+SRI                               00000000
+SRLEN                             00000007
+SRNQ                              00000005
+SRNQEN                            00000002
+SRPR                              00000000
+SRPS                              00000001
+SRQ                               00000004
+SRQEN                             00000003
+SRRC1E                            00000000
+SRRC2E                            00000001
+SRRCKE                            00000002
+SRRPE                             00000003
+SRSC1E                            00000004
+SRSC2E                            00000005
+SRSCKE                            00000006
+SRSPE                             00000007
+SS                                00000005
+SS1                               00000005
+SS2                               00000003
+SSP1ADD                           00000FC8
+SSP1BUF                           00000FC9
+SSP1CON1                          00000FC6
+SSP1CON2                          00000FC5
+SSP1CON3                          00000FCB
+SSP1IE                            00000003
+SSP1IF                            00000003
+SSP1IP                            00000003
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE 52
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+SSP1MSK                           00000FCA
+SSP1STAT                          00000FC7
+SSP2ADD                           00000F6E
+SSP2BUF                           00000F6F
+SSP2CON1                          00000F6C
+SSP2CON2                          00000F6B
+SSP2CON3                          00000F69
+SSP2IE                            00000007
+SSP2IF                            00000007
+SSP2IP                            00000007
+SSP2MSK                           00000F6A
+SSP2STAT                          00000F6D
+SSPADD                            00000FC8
+SSPBUF                            00000FC9
+SSPCON1                           00000FC6
+SSPCON2                           00000FC5
+SSPCON3                           00000FCB
+SSPEN                             00000005
+SSPIE                             00000003
+SSPIF                             00000003
+SSPIP                             00000003
+SSPM0                             00000000
+SSPM1                             00000001
+SSPM2                             00000002
+SSPM3                             00000003
+SSPMSK                            00000FCA
+SSPOV                             00000006
+SSPSTAT                           00000FC7
+STATUS                            00000FD8
+STKFUL                            00000007
+STKOVF                            00000007
+STKPTR                            00000FFC
+STKPTR0                           00000000
+STKPTR1                           00000001
+STKPTR2                           00000002
+STKPTR3                           00000003
+STKPTR4                           00000004
+STKUNF                            00000006
+STR1A                             00000000
+STR1B                             00000001
+STR1C                             00000002
+STR1D                             00000003
+STR1SYNC                          00000004
+STR2A                             00000000
+STR2B                             00000001
+STR2C                             00000002
+STR2D                             00000003
+STR2SYNC                          00000004
+STR3A                             00000000
+STR3B                             00000001
+STR3C                             00000002
+STR3D                             00000003
+STR3SYNC                          00000004
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE 53
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+SWDTE                             00000000
+SWDTEN                            00000000
+SYNC                              00000004
+SYNC1                             00000004
+SYNC2                             00000004
+T08BIT                            00000006
+T0CKI                             00000004
+T0CON                             00000FD5
+T0CS                              00000005
+T0IE                              00000005
+T0IF                              00000002
+T0PS0                             00000000
+T0PS1                             00000001
+T0PS2                             00000002
+T0SE                              00000004
+T1CKI                             00000000
+T1CKPS0                           00000004
+T1CKPS1                           00000005
+T1CON                             00000FCD
+T1G                               00000005
+T1GCON                            00000FCC
+T1GGO                             00000003
+T1GGO_NOT_DONE                    00000003
+T1GPOL                            00000006
+T1GSPM                            00000004
+T1GSS0                            00000000
+T1GSS1                            00000001
+T1GTM                             00000005
+T1GVAL                            00000002
+T1G_DONE                          00000003
+T1OSCEN                           00000003
+T1OSI                             00000001
+T1OSO                             00000000
+T1RD16                            00000001
+T1SOSCEN                          00000003
+T1SYNC                            00000002
+T2CKPS0                           00000000
+T2CKPS1                           00000001
+T2CON                             00000FBA
+T2OUTPS0                          00000003
+T2OUTPS1                          00000004
+T2OUTPS2                          00000005
+T2OUTPS3                          00000006
+T3CKI_PORTB                       00000005
+T3CKI_PORTC                       00000000
+T3CKPS0                           00000004
+T3CKPS1                           00000005
+T3CON                             00000FB1
+T3G                               00000000
+T3GCON                            00000FB4
+T3GGO                             00000003
+T3GGO_NOT_DONE                    00000003
+T3GPOL                            00000006
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE 54
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+T3GSPM                            00000004
+T3GSS0                            00000000
+T3GSS1                            00000001
+T3GTM                             00000005
+T3GVAL                            00000002
+T3G_DONE                          00000003
+T3OSCEN                           00000003
+T3RD16                            00000001
+T3SOSCEN                          00000003
+T4CKPS0                           00000000
+T4CKPS1                           00000001
+T4CON                             00000F51
+T4OUTPS0                          00000003
+T4OUTPS1                          00000004
+T4OUTPS2                          00000005
+T4OUTPS3                          00000006
+T5CKI                             00000002
+T5CKPS0                           00000004
+T5CKPS1                           00000005
+T5CON                             00000F4E
+T5G                               00000004
+T5GCON                            00000F4D
+T5GGO                             00000003
+T5GGO_NOT_DONE                    00000003
+T5GPOL                            00000006
+T5GSPM                            00000004
+T5GSS0                            00000000
+T5GSS1                            00000001
+T5GTM                             00000005
+T5GVAL                            00000002
+T5G_DONE                          00000003
+T5RD16                            00000001
+T5SOSCEN                          00000003
+T5SYNC                            00000002
+T6CKPS0                           00000000
+T6CKPS1                           00000001
+T6CON                             00000F4A
+T6OUTPS0                          00000003
+T6OUTPS1                          00000004
+T6OUTPS2                          00000005
+T6OUTPS3                          00000006
+TABLAT                            00000FF5
+TBLPTR                            00000FF6
+TBLPTRH                           00000FF7
+TBLPTRL                           00000FF6
+TBLPTRU                           00000FF8
+TGEN                              00000004
+TMR0                              00000FD6
+TMR0H                             00000FD7
+TMR0IE                            00000005
+TMR0IF                            00000002
+TMR0IP                            00000002
+TMR0L                             00000FD6
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE 55
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+TMR0ON                            00000007
+TMR1                              00000FCE
+TMR1CS0                           00000006
+TMR1CS1                           00000007
+TMR1GE                            00000007
+TMR1GIE                           00000000
+TMR1GIF                           00000000
+TMR1GIP                           00000000
+TMR1H                             00000FCF
+TMR1IE                            00000000
+TMR1IF                            00000000
+TMR1IP                            00000000
+TMR1L                             00000FCE
+TMR1MD                            00000000
+TMR1ON                            00000000
+TMR2                              00000FBC
+TMR2IE                            00000001
+TMR2IF                            00000001
+TMR2IP                            00000001
+TMR2MD                            00000001
+TMR2ON                            00000002
+TMR3                              00000FB2
+TMR3CS0                           00000006
+TMR3CS1                           00000007
+TMR3GE                            00000007
+TMR3GIE                           00000001
+TMR3GIF                           00000001
+TMR3GIP                           00000001
+TMR3H                             00000FB3
+TMR3IE                            00000001
+TMR3IF                            00000001
+TMR3IP                            00000001
+TMR3L                             00000FB2
+TMR3MD                            00000002
+TMR3ON                            00000000
+TMR4                              00000F53
+TMR4IE                            00000000
+TMR4IF                            00000000
+TMR4IP                            00000000
+TMR4MD                            00000003
+TMR4ON                            00000002
+TMR5                              00000F4F
+TMR5CS0                           00000006
+TMR5CS1                           00000007
+TMR5GE                            00000007
+TMR5GIE                           00000002
+TMR5GIF                           00000002
+TMR5GIP                           00000002
+TMR5H                             00000F50
+TMR5IE                            00000001
+TMR5IF                            00000001
+TMR5IP                            00000001
+TMR5L                             00000F4F
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE 56
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+TMR5MD                            00000004
+TMR5ON                            00000000
+TMR6                              00000F4C
+TMR6IE                            00000002
+TMR6IF                            00000002
+TMR6IP                            00000002
+TMR6MD                            00000005
+TMR6ON                            00000002
+TO                                00000003
+TOS                               00000FFD
+TOSH                              00000FFE
+TOSL                              00000FFD
+TOSU                              00000FFF
+TRIGSEL                           00000007
+TRISA                             00000F92
+TRISA0                            00000000
+TRISA1                            00000001
+TRISA2                            00000002
+TRISA3                            00000003
+TRISA4                            00000004
+TRISA5                            00000005
+TRISA6                            00000006
+TRISA7                            00000007
+TRISB                             00000F93
+TRISB0                            00000000
+TRISB1                            00000001
+TRISB2                            00000002
+TRISB3                            00000003
+TRISB4                            00000004
+TRISB5                            00000005
+TRISB6                            00000006
+TRISB7                            00000007
+TRISC                             00000F94
+TRISC0                            00000000
+TRISC1                            00000001
+TRISC2                            00000002
+TRISC3                            00000003
+TRISC4                            00000004
+TRISC5                            00000005
+TRISC6                            00000006
+TRISC7                            00000007
+TRISD                             00000F95
+TRISD0                            00000000
+TRISD1                            00000001
+TRISD2                            00000002
+TRISD3                            00000003
+TRISD4                            00000004
+TRISD5                            00000005
+TRISD6                            00000006
+TRISD7                            00000007
+TRISE                             00000F96
+TRISE0                            00000000
+TRISE1                            00000001
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE 57
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+TRISE2                            00000002
+TRMT                              00000001
+TRMT1                             00000001
+TRMT2                             00000001
+TUN0                              00000000
+TUN1                              00000001
+TUN2                              00000002
+TUN3                              00000003
+TUN4                              00000004
+TUN5                              00000005
+TX                                00000006
+TX1                               00000006
+TX1IE                             00000004
+TX1IF                             00000004
+TX1IP                             00000004
+TX1REG                            00000FAD
+TX1STA                            00000FAC
+TX2                               00000006
+TX2IE                             00000004
+TX2IF                             00000004
+TX2IP                             00000004
+TX2REG                            00000F73
+TX2STA                            00000F72
+TX9                               00000006
+TX91                              00000006
+TX92                              00000006
+TX9D                              00000000
+TX9D1                             00000000
+TX9D2                             00000000
+TXEN                              00000005
+TXEN1                             00000005
+TXEN2                             00000005
+TXIE                              00000004
+TXIF                              00000004
+TXIP                              00000004
+TXREG                             00000FAD
+TXREG1                            00000FAD
+TXREG2                            00000F73
+TXSTA                             00000FAC
+TXSTA1                            00000FAC
+TXSTA2                            00000F72
+UA                                00000001
+UART1MD                           00000006
+UART2MD                           00000007
+VDIRMAG                           00000007
+VPP                               00000003
+VREFCON0                          00000F42
+VREFCON1                          00000F41
+VREFCON2                          00000F40
+VREFM                             00000002
+VREFN                             00000002
+VREFP                             00000003
+W                                 00000000
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE 58
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+WCOL                              00000007
+WDTCON                            00000FD1
+WPUB                              00000F61
+WPUB0                             00000000
+WPUB1                             00000001
+WPUB2                             00000002
+WPUB3                             00000003
+WPUB4                             00000004
+WPUB5                             00000005
+WPUB6                             00000006
+WPUB7                             00000007
+WPUE3                             00000007
+WR                                00000001
+WREG                              00000FE8
+WREN                              00000002
+WRERR                             00000003
+WUE                               00000001
+Z                                 00000002
+_BELL                             00000007
+_BKSP                             00000008
+_BLUE_LED                         _PORTD??1
+_BOREN_NOSLP_2L                   000000FD
+_BOREN_OFF_2L                     000000F9
+_BOREN_ON_2L                      000000FB
+_BOREN_SBORDIS_2L                 000000FF
+_BORV_190_2L                      000000FF
+_BORV_220_2L                      000000F7
+_BORV_250_2L                      000000EF
+_BORV_285_2L                      000000E7
+_Bright                           00000016
+_CCP2MX_PORTB3_3H                 000000FE
+_CCP2MX_PORTC1_3H                 000000FF
+_CCP3MX_PORTB5_3H                 000000FF
+_CCP3MX_PORTE0_3H                 000000FB
+_CLS                              00000000
+_CONFIG1H                         00300001
+_CONFIG2H                         00300003
+_CONFIG2L                         00300002
+_CONFIG3H                         00300005
+_CONFIG4L                         00300006
+_CONFIG5H                         00300009
+_CONFIG5L                         00300008
+_CONFIG6H                         0030000B
+_CONFIG6L                         0030000A
+_CONFIG7H                         0030000D
+_CONFIG7L                         0030000C
+_CP0_OFF_5L                       000000FF
+_CP0_ON_5L                        000000FE
+_CP1_OFF_5L                       000000FF
+_CP1_ON_5L                        000000FD
+_CP2_OFF_5L                       000000FF
+_CP2_ON_5L                        000000FB
+_CP3_OFF_5L                       000000FF
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE 59
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+_CP3_ON_5L                        000000F7
+_CPB_OFF_5H                       000000FF
+_CPB_ON_5H                        000000BF
+_CPD_OFF_5H                       000000FF
+_CPD_ON_5H                        0000007F
+_CR                               0000000D
+_DEBUG_OFF_4L                     000000FF
+_DEBUG_ON_4L                      0000007F
+_DEVID1                           003FFFFE
+_DEVID2                           003FFFFF
+_Dim                              0000001E
+_EBTR0_OFF_7L                     000000FF
+_EBTR0_ON_7L                      000000FE
+_EBTR1_OFF_7L                     000000FF
+_EBTR1_ON_7L                      000000FD
+_EBTR2_OFF_7L                     000000FF
+_EBTR2_ON_7L                      000000FB
+_EBTR3_OFF_7L                     000000FF
+_EBTR3_ON_7L                      000000F7
+_EBTRB_OFF_7H                     000000FF
+_EBTRB_ON_7H                      000000BF
+_FCMEN_OFF_1H                     000000BF
+_FCMEN_ON_1H                      000000FF
+_FOSC_ECHPIO6_1H                  000000F5
+_FOSC_ECHP_1H                     000000F4
+_FOSC_ECLPIO6_1H                  000000FD
+_FOSC_ECLP_1H                     000000FC
+_FOSC_ECMPIO6_1H                  000000FB
+_FOSC_ECMP_1H                     000000FA
+_FOSC_HSHP_1H                     000000F2
+_FOSC_HSMP_1H                     000000F3
+_FOSC_INTIO67_1H                  000000F8
+_FOSC_INTIO7_1H                   000000F9
+_FOSC_LP_1H                       000000F0
+_FOSC_RCIO6_1H                    000000F7
+_FOSC_RC_1H                       000000F6
+_FOSC_XT_1H                       000000F1
+_HFOFST_OFF_3H                    000000F7
+_HFOFST_ON_3H                     000000FF
+_HOME                             00000001
+_IDLOC0                           00200000
+_IDLOC1                           00200001
+_IDLOC2                           00200002
+_IDLOC3                           00200003
+_IDLOC4                           00200004
+_IDLOC5                           00200005
+_IDLOC6                           00200006
+_IDLOC7                           00200007
+_IESO_OFF_1H                      0000007F
+_IESO_ON_1H                       000000FF
+_INIT                             0000006E
+_INIT_TMR0                        000000AA
+_INTCON??2                        INTCON, 002h
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE 60
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+_INTERRUPT_HANDLER                0000009A
+_INT_PIN                          _PORTD??0
+_LSBFIRST                         00000000
+_LSBPOST                          00000003
+_LSBPRE                           00000001
+_LVP_OFF_4L                       000000FB
+_LVP_ON_4L                        000000FF
+_LightsOff                        00000010
+_LightsOn                         00000014
+_MAIN                             0000008E
+_MCLRE_EXTMCLR_3H                 000000FF
+_MCLRE_INTMCLR_3H                 0000007F
+_MSBFIRST                         00000001
+_MSBPOST                          00000002
+_MSBPRE                           00000000
+_N1200                            00000005
+_N2400                            00000004
+_N300                             00000007
+_N9600                            00000006
+_ON1200                           0000000D
+_ON2400                           0000000C
+_ON300                            0000000F
+_ON9600                           0000000E
+_OT1200                           00000009
+_OT2400                           00000008
+_OT300                            0000000B
+_OT9600                           0000000A
+_P2BMX_PORTC0_3H                  000000DF
+_P2BMX_PORTD2_3H                  000000FF
+_PBADEN_OFF_3H                    000000FD
+_PBADEN_ON_3H                     000000FF
+_PLLCFG_OFF_1H                    000000EF
+_PLLCFG_ON_1H                     000000FF
+_PORTD??0                         PORTD, 000h
+_PORTD??1                         PORTD, 001h
+_PORTH                            00000F82
+_PORTL                            00000F81
+_PRICLKEN_OFF_1H                  000000DF
+_PRICLKEN_ON_1H                   000000FF
+_PWRTEN_OFF_2L                    000000FF
+_PWRTEN_ON_2L                     000000FE
+_STVREN_OFF_4L                    000000FE
+_STVREN_ON_4L                     000000FF
+_T1200                            00000001
+_T2400                            00000000
+_T300                             00000003
+_T3CMX_PORTB5_3H                  000000EF
+_T3CMX_PORTC0_3H                  000000FF
+_T9600                            00000002
+_TAB                              00000009
+_TMR0_TICK_THRESHOLD              00008235
+_TRISH                            00000F94
+_TRISL                            00000F93
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE 61
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+_UnitOff                          0000001A
+_UnitOn                           00000012
+_UnitsOff                         0000001C
+_WDTEN_NOSLP_2H                   000000FD
+_WDTEN_OFF_2H                     000000FC
+_WDTEN_ON_2H                      000000FF
+_WDTEN_SWON_2H                    000000FE
+_WDTPS_1024_2H                    000000EB
+_WDTPS_128_2H                     000000DF
+_WDTPS_16384_2H                   000000FB
+_WDTPS_16_2H                      000000D3
+_WDTPS_1_2H                       000000C3
+_WDTPS_2048_2H                    000000EF
+_WDTPS_256_2H                     000000E3
+_WDTPS_2_2H                       000000C7
+_WDTPS_32768_2H                   000000FF
+_WDTPS_32_2H                      000000D7
+_WDTPS_4096_2H                    000000F3
+_WDTPS_4_2H                       000000CB
+_WDTPS_512_2H                     000000E7
+_WDTPS_64_2H                      000000DB
+_WDTPS_8192_2H                    000000F7
+_WDTPS_8_2H                       000000CF
+_WRT0_OFF_6L                      000000FF
+_WRT0_ON_6L                       000000FE
+_WRT1_OFF_6L                      000000FF
+_WRT1_ON_6L                       000000FD
+_WRT2_OFF_6L                      000000FF
+_WRT2_ON_6L                       000000FB
+_WRT3_OFF_6L                      000000FF
+_WRT3_ON_6L                       000000F7
+_WRTB_OFF_6H                      000000FF
+_WRTB_ON_6H                       000000BF
+_WRTC_OFF_6H                      000000FF
+_WRTC_ON_6H                       000000DF
+_WRTD_OFF_6H                      000000FF
+_WRTD_ON_6H                       0000007F
+_XINST_OFF_4L                     000000BF
+_XINST_ON_4L                      000000FF
+__18F46K22                        00000001
+main                              00000050
+pauseloop                         0000001E
+pauseush                          0000003E
+pauseusloop                       0000003C
+MPASM 5.75         46K22 TMR0 TEST DEV-1.ASM   2-14-2018  20:34:25         PAGE 62
+
+
+MEMORY USAGE MAP ('X' = Used,  '-' = Unused)
+
+
+0000 : XXXX----XX------ --------XXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX
+0040 : XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX
+0080 : XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX
+00C0 : XXXX------------ ---------------- ---------------- ----------------
+0000 : -XXX-XX-XXXXXX-- ---------------- ---------------- ----------------
+
+All other memory blocks unused.
+
+Program Memory Bytes Used:   189
+Program Memory Bytes Free: 65347
+
+
+Errors   :     0
+Warnings :     0 reported,     0 suppressed
+Messages :     0 reported,     0 suppressed
+
+

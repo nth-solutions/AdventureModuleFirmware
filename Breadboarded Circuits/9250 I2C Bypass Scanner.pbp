@@ -1,0 +1,218 @@
+'****************************************************************
+'*  Name    : I2C Scanner.BAS                                   *
+'*  Author  : Andrew D. McEntee                                 *
+'*  Notice  : Copyright (c) 2016 Andrew D. McEntee              *
+'*          : All Rights Reserved                               *
+'*  Date    : 9/28/2016                                         *
+'*  Version : 1.0                                               *
+'*  Notes   :                                                   *
+'*          :                                                   *
+'****************************************************************
+include "MODEDEFS.BAS"
+define OSC 8
+OPTION_REG =%00000000     'Disable all PORTA pullups, set prescaler for WDT to 1:1
+INTCON = %00000000        'Disable all interrupts
+PIE1 = %00000000          'Disable other Interrupts
+PIR1 = %00000000          'Reset all flags
+OSCCON = %01110111        '8MHz, set sytem to run on HFINTOSC
+ANSEL = %00100000         
+TRISA = %00000000         'Set all Port A pins to output
+TRISC = %00000000         'Set all Port C pins to output
+WPUA = %00000000
+IOCA = %00000000          'Disable PORT A interrupt on change
+CMCON0 = %00000111        'Disable Comparator
+ADCON0 = %00000000        'Disable A/D
+
+'I2C SLAVE ADDRESS			
+MPU_ADDR_W    con     $D0                                   'WRITE ADDRESS OF THE MPU-9250
+MAG_ADDR_W    con     $18                                   'WRITE ADDRESS OF THE AK8963 MAG
+
+'MPU9250 REGISTER ADDRESSES
+MAG_XOUT_L_ADDR       con $03                              'SEE MPU-9250 REGISTER MAP FOR MORE INFO:
+                                                                 '\\ELEANOR\DOCUMENTS\_URICCHIO PROJECT\MPU-9250 DOCUMENTATION - "MPU-9250 REGISTER MAP - NA - INVENSENSE - JAN 2015"
+MAG_XOUT_H_ADDR       con $04
+MAG_YOUT_L_ADDR       con $05
+MAG_YOUT_H_ADDR       con $06
+MAG_ZOUT_L_ADDR       con $07
+MAG_ZOUT_H_ADDR       con $08
+CNTL1_ADDR            con $0A
+CNTL2_ADDR            con $0B
+XACCEL_FACT_ST        con $0D
+YACCEL_FACT_ST        con $0E
+ZACCEL_FACT_ST        con $0F
+SMPLRT_DIV_ADDR       con $19
+GEN_CONFIG_ADDR       con $1A
+GYRO_CONFIG_ADDR      con $1B
+ACCEL_CONFIG_ADDR     con $1C
+ACCEL_CONFIG_2_ADDR   con $1D
+I2C_MSTR_ADDR         con $24
+INT_PIN_CFG_ADDR      con $37
+INT_ENABLE_ADDR       con $38
+INT_STATUS_ADDR       con $3A
+ACCEL_XOUT_H_ADDR     con $3B
+ACCEL_XOUT_L_ADDR     con $3C
+ACCEL_YOUT_H_ADDR     con $3D
+ACCEL_YOUT_L_ADDR     con $3E
+ACCEL_ZOUT_H_ADDR     con $3F
+ACCEL_ZOUT_L_ADDR     con $40
+TEMP_OUT_H_ADDR       con $41
+TEMP_OUT_L_ADDR       con $42
+GYRO_XOUT_H_ADDR      con $43
+GYRO_XOUT_L_ADDR      con $44
+GYRO_YOUT_H_ADDR      con $45
+GYRO_YOUT_L_ADDR      con $46
+GYRO_ZOUT_H_ADDR      con $47
+GYRO_ZOUT_L_ADDR      con $48
+USER_CONTROL_ADDR     con $6A
+PWR_MGMT_1_ADDR       con $6B
+PWR_MGMT_2_ADDR       con $6C
+XA_OFFS_H_ADDR        con $77
+XA_OFFS_L_ADDR        con $78
+YA_OFFS_H_ADDR        con $79
+YA_OFFS_L_ADDR        con $80
+ZA_OFFS_H_ADDR        con $81
+ZA_OFFS_L_ADDR        con $82
+
+'MPU-9250 CONFIG DATA
+PWR_MGMT_1_DATA         con     %00000001               'USE INTERNAL 20MHZ OSCILLATOR AS CLOCK SOURCE FOR MPU-9250
+PWR_MGMT_2_DATA         con     %00000000               'ENABLE GYRO AND ACCEL IN ALL DIMENSIONS
+INT_PIN_CFG_DATA        CON     %00010010               'DISBALE INTERRUPTS
+INT_ENABLE_DATA         CON     %00000001               'DISABLE INTERRUPTS
+CNTL1_CONFIG_DATA       con     %00010001               '16 BIT RESOLUTION, SINGLE SHOT MODE (TAKES 10MS TO SAMPLE MINIMUM)               
+MPU_RESET_CMD           con     $80                     'SENT TO PWR_MGMT_1_ADDR TO RESET THE MPU-9250
+
+GEN_CONFIG_DATA         CON     %00000000
+GYRO_CONFIG_DATA        CON     %00000000
+ACCEL_CONFIG_DATA       CON     %00000000
+ACCEL_CONFIG_2_DATA     CON     %00000000
+
+ 
+
+LED				    var 	PORTC.2     'Pin 8 
+SDA					var		PORTA.5		'Pin 2
+SCL					var		PORTA.4		'Pin 3
+'SCL        		 var     PORTC.4   	'Pin 6
+'SDA         		 var     PORTC.3   	'Pin 7
+DSP					var		PORTA.0		'Pin 13
+
+I					var		byte
+DEVICE_ID           VAR     BYTE
+COUNTER 			VAR     byte
+I2C_ADDR			var		byte
+VALID				var		word
+
+output LED
+output SCL
+output SDA
+output DSP
+
+
+counter = 0
+serout dsp,T9600,["I2C Scanner"]
+input SDA: input SCL
+gosub INIT_MPU
+pause 2000
+gosub CRLF
+main:
+	gosub init_blink
+	for I2C_ADDR = 0 to 254 step 2
+		Valid = I2C_ADDR
+		i2cwrite SDA,SCL,I2C_ADDR,[0],Not_found
+		NEXT_ADDR:
+		if Valid < 1000 then
+			counter = counter + 1
+			if COUNTER = 5 THEN
+				gosub CRLF
+				endif
+			serout dsp,T9600,[#I2C_ADDR," : "]
+			I2CREAD sda, scl, I2C_ADDR, 0, [DEVICE_ID]
+            serout dsp,T9600,[#DEVICE_ID] 
+			gosub CRLF
+			endif
+		next I2C_addr
+	if COUNTER = 0 then
+		serout dsp,T9600,["No Device Found"]
+		gosub CRLF
+		endif
+	end
+INIT_MPU:
+    'RESET MPU
+    i2cwrite SDA, SCL, MPU_ADDR_W, PWR_MGMT_1_ADDR, MPU_RESET_CMD, MPU_ERROR
+    pause 100                               
+    'PWR_MGMT_1
+    i2cwrite SDA, SCL, MPU_ADDR_W, PWR_MGMT_1_ADDR, PWR_MGMT_1_DATA, MPU_ERROR
+    pause 100  
+    'PWR_MGMT_2
+    i2cwrite SDA, SCL, MPU_ADDR_W, PWR_MGMT_2_ADDR, PWR_MGMT_2_DATA, MPU_ERROR
+    pause 100 
+    'GEN_CONFIG
+    i2cwrite SDA, SCL, MPU_ADDR_W, GEN_CONFIG_ADDR, GEN_CONFIG_DATA, MPU_ERROR
+    pause 100 
+    'GYRO CONFIG
+    i2cwrite SDA, SCL, MPU_ADDR_W, GYRO_CONFIG_ADDR, GYRO_CONFIG_DATA, MPU_ERROR
+    pause 100 
+    'ACCEL_CONFIG
+    i2cwrite SDA, SCL, MPU_ADDR_W, ACCEL_CONFIG_ADDR, ACCEL_CONFIG_DATA, MPU_ERROR
+    pause 100 
+    'ACCEL_CONFIG_2
+    i2cwrite SDA, SCL, MPU_ADDR_W, ACCEL_CONFIG_2_ADDR, ACCEL_CONFIG_2_DATA, MPU_ERROR
+    pause 100 
+   'INT_PIN_CONFIG
+    i2cwrite SDA, SCL, MPU_ADDR_W, INT_PIN_CFG_ADDR, INT_PIN_CFG_DATA, MPU_ERROR
+    pause 100 
+    'INT_ENABLE
+    i2cwrite SDA, SCL, MPU_ADDR_W, INT_ENABLE_ADDR, INT_ENABLE_DATA, MPU_ERROR
+    pause 100 
+    'TAKE NEW MAG READING
+    i2cwrite SDA, SCL, MAG_ADDR_w, CNTL1_addr, CNTL1_CONFIG_DATA, MPU_ERROR
+    pause 100
+return
+    
+'****************ERROR SUBROUTINES************************************************************
+MPU_ERROR:                  'INFINITE LED BLINK ERROR LOOP
+    WHILE 1 == 1
+        LED = 1
+        PAUSE 500
+        LED = 0
+        PAUSE 500
+        WEND
+RETURN  	
+NOT_FOUND:
+	VALID = 1000
+	goto NEXt_ADDR
+	return
+'**********************************************************************************			
+'LCD model for these subroutines is "SerLCD v2.5" by LinkSprite (5v Vdd)    
+INIT_LCD:
+	gosub CLR:pause 25: gosub CLR
+	return
+CLR:
+    serout DSP,T9600,[$FE,$01]      'Clear LCD and move cursor to home
+    pause 10
+    return
+LINE1:
+    serout DSP,T9600,[$FE,$80]      'Move cursor to Line 1
+    return    
+LINE2:
+    serout DSP,T9600,[$FE,$C0]      'Move cursor to Line 2
+    return
+BLINK_CUR:
+    serout DSP,T9600,[$FE,$0D]      'Show blinking cursor
+    return
+DIS_CUR:
+    serout DSP,T9600,[$FE,$0C]      'Hide blinking cursor
+    return	 	
+'**********************************************************************************			
+'LCD model for these subroutines is "SerLCD v2.5" by LinkSprite (5v Vdd)    
+CRLF:
+   serout DSP,T9600,[10,13]      'Show blinking cursor
+   return  	
+'****************LED SUBROUTINES***************************************************
+INIT_BLINK:
+	for I = 0 to 1
+			LED = 1
+			pause 100
+			LED = 0
+			pause 100
+			next I 
+	return

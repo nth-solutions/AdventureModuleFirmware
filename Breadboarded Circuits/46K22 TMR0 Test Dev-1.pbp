@@ -1,0 +1,97 @@
+'****************************************************************
+'*  Name    : 46K22 TMR0 Test Dev-1.BAS                         *
+'*  Author  : Andrew McEntee                                    *
+'*  Notice  : Copyright (c) 2018 nth Solutions LLC.             *
+'*          : All Rights Reserved                               *
+'*  Date    : 2/14/2018                                         *
+'*  Version : 1.0                                               *
+'*  Notes   :                                                   *
+'*          :                                                   *
+'****************************************************************
+'***************PROGRAMMER CONFIGURATIONS************************
+'* OSCILLATOR: HS (MEDIUM POWER)                                *
+'* PLL: ENABLED                                                 *
+'* PRIMARY CLOCK: ENABLED                                       *
+'* FAILSAFE CLOCK MONITOR: DISABLED                             *
+'* INTERNAL EXTERNAL SWITCHOVER: DISABLED                       *
+'* POWER UP TIMER: ENABLED                                      *
+'* BROWN OUT RESET: DISABLED                                    *
+'* BROWN OUT RESET VOLTAGE: 1.9V                                *
+'* WATCHDOG TIMER: DISABLE (enable if no NAP's are used)      v  *
+'* WATCHDOG TIMER POSTSCALER: 1:32768   (1:1 if NAP's are used) *
+'* CCP2 MULTIPLEXED WITH: RC1                                   *
+'* PORTB RESET STATE: DIGITAL I/O                               *
+'* CCP3 MULTIPLEXED WITH: RB5                                   *
+'* HFINTOSC FAST START: NOT DELAYED                             *
+'* T3CKI MULTIPLEXED WITH: RC0                                  *
+'* CCP2 B MULTPLEXED WITH: RB5                                  *
+'* MCLR FUNCTION: INPUT PIN                                     *
+'* STACK OVERFLOW/ UNDERFLOW RESET: DISABLED                    *
+'* LOW VOLTAGE PROGRAMMING: DISABLED                            *
+'* ENHANCED CPU: DISABLED                                       *
+'* BOOT BLOCK: NOT PROTECTED                                    *                                                               
+'* EVERYTHING ELSE: NOT PROTECTED                               *
+'****************************************************************
+
+include "MODEDEFS.BAS"
+define OSC 32        
+   
+OSCCON = %11101000		'USE CRYSTAL OSCILLATOR AT 8 MHZ
+OSCCON2 = %10000000		'ENABLE 4xPLL
+OSCTUNE = %01000000		'ENABLE 4xPLL FOR INTOSC
+INTCON = %00000000      'DISABLE ALL INTERRUPTS, ENABLED LATER IN INIT_TMR0 SUBROUTINE
+WPUB = %00000000        'DISABLE PULLUPS ON PORTB
+ANSELA = %00000000      'SET ALL A PORTS TO DIGITAL
+ANSELB = %00000000      'SET ALL B PORTS TO DIGITAL
+ANSELC = %00000000      'SET ALL C PORTS TO DIGITAL
+TRISE = %00000001       'DISABLE PULLUPS ON PORTE
+
+'Set Pin Aliases                            'DIP-40 Package
+BLUE_LED                var     PORTD.1     'PIN 20
+INT_PIN                 var     PORTD.0     'PIN 19
+
+TMR0_TICK_THRESHOLD     CON     33333       'THIS IS THE NUMBER THAT TMR0 WILL COUNT TO BEFORE ROLLING OVER 
+                                            '!!ASSUME PRESCALER OF 2 WITH 8MHZ SOURCE  SO PRECISION IS 250nS
+
+
+INIT:
+    ON interrupt goto INTERRUPT_HANDLER              'SPECIFIES THE SUBROUTINE TO EXECUTE WHEN AN INTERRUPT IS DETECTED
+    INTCON = %10100000                               'ENABLES GLOBAL INTERRUPTS AND TMR0 INTERRUPT SPECIFICALLY
+    disable
+    
+    OUTPUT BLUE_LED
+    output INT_PIN 
+    
+    INT_PIN = 0
+    BLUE_LED = 1
+    PAUSE 100
+    BLUE_LED = 0
+MAIN:    
+    enable
+    GOSUB INIT_TMR0                           'INITIALIZE TMR0 VALUES FOR GIVEN SAMPLE RATE
+    while(1)
+        wend
+        
+'SUBROUTINES********************************************************************
+disable
+INTERRUPT_HANDLER:  '**NOTE: YOU CANNOT EXECUTE A SUBROUTINE WITHIN THE INTERRUPT HANDLER
+    TMR0H = (65535 - TMR0_TICK_THRESHOLD) / 256     'SET HIGH BYTE OF TMR0 VALUE SO IT OVERFLOWS AT THE DESIRED PERIOD
+    TMR0L = (65535 - TMR0_TICK_THRESHOLD) // 256    'SET LOW BYTE OF TMR0 VALUE SO IT OVERFLOWS AT THE DESIRED PERIOD
+    INTCON.2 = 0                                                       'RESET TMR0 OVERFLOW INTERRUPT
+    INT_pin = 1
+    INT_PIN = 0
+    resume     
+enable
+    
+INIT_TMR0:
+    T0CON = %10000000                               'ENABLES TIMER0, SETS AS 16-BIT, SET CLKOUT (T0CKI PIN) AS SOURCE, 
+                                                    'INCREMENT ON RISING EDGE OF T0CKI PIN, ASSIGN PRESCALER OF 8 (PRECISION OF 250nS)
+                                                    
+    TMR0H = (65535 - TMR0_TICK_THRESHOLD) / 256     'SET HIGH BYTE OF TMR0 VALUE SO IT OVERFLOWS AT THE DESIRED PERIOD
+    TMR0L = (65535 - TMR0_TICK_THRESHOLD) // 256    'SET LOW BYTE OF TMR0 VALUE SO IT OVERFLOWS AT THE DESIRED PERIOD
+    INTCON.2 = 0    
+    RETURN
+
+
+
+        

@@ -1,0 +1,1097 @@
+'****************************************************************
+'*  Name    : 26K22 SPI 9250 Test Dev-1.BAS                     *
+'*  Author  : Andrew McEntee                                    *
+'*  Notice  : Copyright (c) 2018 nth Solutions LLC.             *
+'*          : All Rights Reserved                               *
+'*  Date    : 4/17/2018                                         *
+'*  Version : 1.0                                               *
+'*  Notes   :                                                   *
+'*          :                                                   *
+'****************************************************************
+'***************PROGRAMMER CONFIGURATIONS************************
+'* OSCILLATOR: HS (MEDIUM POWER)                                *
+'* PLL: ENABLED                                                 *
+'* PRIMARY CLOCK: ENABLED                                       *
+'* FAILSAFE CLOCK MONITOR: DISABLED                             *
+'* INTERNAL EXTERNAL SWITCHOVER: DISABLED                       *
+'* POWER UP TIMER: ENABLED                                      *
+'* BROWN OUT RESET: DISABLED                                    *
+'* BROWN OUT RESET VOLTAGE: 1.9V                                *
+'* WATCHDOG TIMER: DISABLE (enable if no NAP's are used)      v  *
+'* WATCHDOG TIMER POSTSCALER: 1:32768   (1:1 if NAP's are used) *
+'* CCP2 MULTIPLEXED WITH: RC1                                   *
+'* PORTB RESET STATE: DIGITAL I/O                               *
+'* CCP3 MULTIPLEXED WITH: RB5                                   *
+'* HFINTOSC FAST START: NOT DELAYED                             *
+'* T3CKI MULTIPLEXED WITH: RC0                                  *
+'* CCP2 B MULTPLEXED WITH: RB5                                  *
+'* MCLR FUNCTION: INPUT PIN                                     *
+'* STACK OVERFLOW/ UNDERFLOW RESET: DISABLED                    *
+'* LOW VOLTAGE PROGRAMMING: DISABLED                            *
+'* ENHANCED CPU: DISABLED                                       *
+'* BOOT BLOCK: NOT PROTECTED                                    *                                                               
+'* EVERYTHING ELSE: NOT PROTECTED                               *
+'****************************************************************
+
+include "MODEDEFS.BAS"
+define OSC 32        
+   
+OSCCON = %11101000		'USE EXTERNAL CRYSTAL OSCILLATOR AT 8 MHZ
+OSCCON2 = %10000000		'ENABLE 4xPLL
+OSCTUNE = %01000000		'ENABLE 4xPLL FOR INTOSC
+INTCON = %00000000      'DISABLE ALL INTERRUPTS, ENABLED LATER IN INIT_TMR0 SUBROUTINE
+WPUB = %00000000        'DISABLE PULLUPS ON PORTB
+ANSELA = %00000000      'SET ALL A PORTS TO DIGITAL
+ANSELB = %00000000      'SET ALL B PORTS TO DIGITAL
+ANSELC = %00000000      'SET ALL C PORTS TO DIGITAL
+TRISE = %00000001       'DISABLE PULLUPS ON PORTE
+
+'THESE DEFAULTS WILL ONLY BE IMPLEMENTED AFTER THE MODULE IS FRESHLY PROGRAMMED OR THE PIC'S INTERNAL EEPROM IS ERASED/ CORRUPTED
+DEF_ACCEL_GYRO_SAMPLE_RATE   CON   120                  'DEFAULTS ACCEL AND GYRO SAMPLE RATE TO 120HZ
+DEF_MAG_SAMPLE_RATE          CON   120                  'DEFAULTS MAG SAMPLE RATE TO 50HZ
+DEF_TEST_DURATION            CON   5                    'DEFAULTS TEST DURATION TO 30 SECONDS
+DEF_ACCEL_SENSITIVITY        CON   8                    'DEFAULTS ACCEL SENSITIVITY TO 8G
+DEF_GYRO_SENSITIVITY         CON   1000                 'DEFAULTS GYRO SENSITIVITY TO 100DPS
+DEF_ACCEL_FILTER             CON   92                   'DEFAULTS ACCEL FILTER TO 92HZ
+DEF_GYRO_FILTER              CON   92                   'DEFAULTS GYRO FILTER TO 92HZ
+
+'AK8963 ADDRESSES
+MAG_ADDR_W    con     $0C                                   'WRITE ADDRESS OF THE AK8963 MAG
+'MAG_ADDR_W    con     $18                                   'WRITE ADDRESS OF THE AK8963 MAG
+'MAG_ADDR_R    con     $19                                   'READ ADDRESS OF THE AK8963 MAG
+
+'MPU-9250 CONFIG DATA
+PWR_MGMT_1_DATA         con     %00000001               'AUTO SELECT BEST OSCILLATOR AS CLOCK SOURCE FOR MPU-9250
+PWR_MGMT_2_DATA         con     %00000000               'ENABLE GYRO AND ACCEL IN ALL DIMENSIONS
+INT_PIN_CFG_DATA        CON     %00110000               'DISABLE I2C BYPASS MODE
+INT_ENABLE_DATA         CON     %00000000               'DISABLE INTERRUPTS
+CNTL1_CONFIG_DATA       con     %00010001               '16 BIT RESOLUTION, SINGLE SHOT MODE (TAKES 10MS TO SAMPLE MINIMUM)
+MAG_PWR_DOWN_CMD        CON     %00000000                             
+CNTL2_RESET_CMD         CON     %00000001
+I2C_EN_CMD              CON     %10000000
+USER_CONTROL_DATA       con     %00100000               'RESET I2C SLAVE MODULE, SPI ONLY, ENABLE 9250'S I2C MASTER (SO IT CAN TALK TO THE MAG)
+I2C_MSTR_DATA           CON     %00001101               'SET 9250'S I2C BUS TO RUN AT 400KHz
+MPU_RESET_CMD           con     $80                     'SENT TO PWR_MGMT_1_ADDR TO RESET THE MPU-9250
+FIFO_CONFIG_DATA        CON     %00000000
+MAG_RESET_CMD           CON     %00000001
+'MPU9250 REGISTER ADDRESSES
+MAG_XOUT_L_ADDR       con $03                              'SEE MPU-9250 REGISTER MAP FOR MORE INFO:
+                                                                 '\\ELEANOR\DOCUMENTS\_URICCHIO PROJECT\MPU-9250 DOCUMENTATION - "MPU-9250 REGISTER MAP - NA - INVENSENSE - JAN 2015"
+MAG_XOUT_H_ADDR       con $04
+MAG_YOUT_L_ADDR       con $05
+MAG_YOUT_H_ADDR       con $06
+MAG_ZOUT_L_ADDR       con $07
+MAG_ZOUT_H_ADDR       con $08
+MAG_CNTL1_ADDR        con $0A
+MAG_CNTL2_ADDR        con $0B
+XACCEL_FACT_ST        con $0D
+YACCEL_FACT_ST        con $0E
+ZACCEL_FACT_ST        con $0F
+SMPLRT_DIV_ADDR       con $19
+GEN_CONFIG_ADDR       con $1A
+GYRO_CONFIG_ADDR      con $1B
+ACCEL_CONFIG_ADDR     con $1C
+ACCEL_CONFIG_2_ADDR   con $1D
+FIFO_CONFIG_ADDR      CON $23
+I2C_MSTR_ADDR         con $24
+I2C_SLV0_ADDR         CON $25
+I2C_SLV0_REG          CON $26
+I2C_SLV0_DATA         CON $63
+I2C_SLV0_CNTL         CON $27
+INT_PIN_CFG_ADDR      con $37
+INT_ENABLE_ADDR       con $38
+INT_STATUS_ADDR       con $3A
+ACCEL_XOUT_H_ADDR     con $3B
+ACCEL_XOUT_L_ADDR     con $3C
+ACCEL_YOUT_H_ADDR     con $3D
+ACCEL_YOUT_L_ADDR     con $3E
+ACCEL_ZOUT_H_ADDR     con $3F
+ACCEL_ZOUT_L_ADDR     con $40
+TEMP_OUT_H_ADDR       con $41
+TEMP_OUT_L_ADDR       con $42
+GYRO_XOUT_H_ADDR      con $43
+GYRO_XOUT_L_ADDR      con $44
+GYRO_YOUT_H_ADDR      con $45
+GYRO_YOUT_L_ADDR      con $46
+GYRO_ZOUT_H_ADDR      con $47
+GYRO_ZOUT_L_ADDR      con $48
+EXT_SENS_DATA_00_REG  CON $49
+USER_CONTROL_ADDR     con $6A
+PWR_MGMT_1_ADDR       con $6B
+PWR_MGMT_2_ADDR       con $6C
+MPU_WHO_AM_I_ADDR     CON $75
+XA_OFFS_H_ADDR        con $77
+XA_OFFS_L_ADDR        con $78
+YA_OFFS_H_ADDR        con $79
+YA_OFFS_L_ADDR        con $80
+ZA_OFFS_H_ADDR        con $81
+ZA_OFFS_L_ADDR        con $82
+
+READ_FLAG             CON $80
+
+
+
+
+
+'Set Pin Aliases                            'DIP-28 Package
+BLUE_LED            var     PORTA.0     'PIN 2
+MPU9250_CS          var     PORTA.3     'Pin 5 
+SCK                 var     PORTC.3     'Pin 14
+SDO                 var     PORTC.4     'Pin 15
+SDI                 var     PORTC.5     'Pin 16
+INT_PIN             var     PORTB.3     'PIN 24
+UART_TX             var     PORTC.7     'Pin 18
+UART_RX             var     PORTB.0     'Pin 21 
+
+
+TMR0_TICK_THRESHOLD CON     33333       'THIS IS THE NUMBER THAT TMR0 WILL COUNT TO BEFORE ROLLING OVER 
+                                        '!!ASSUME PRESCALER OF 2 WITH 8MHZ SOURCE  SO PRECISION IS 250nS
+
+'UART VARIABLES AND CONSTANTS
+HEX_RETURN              VAR     BYTE                             'GLOBAL VARIABLE THAT STORES THE RESULT OF THE STRING TO HEX CONVERSION
+TX_DATA				    var		byte                             'VARIABLE THAT STORES WHAT WILL BE TRANSMITTED VIA UART
+TX_BYTE				    VAR		BYTE                             'VARIABLE THAT WILL BE CONVERTED TO HEX BEFORE TRANSMITTING VIA UART
+BIT_INDEX 			    var	    Byte                             'USED TO BIT BANG UART
+HEX_DIGIT_COUNTER	    VAR	    BYTE                             'USED TO CONVERT A BYTE TO HEX
+HEX_INDEX			    VAR	    BYTE                             'USED TO CONVERT A BYTE TO HEX
+RAW_RX_DATA             VAR     BYTE[28]                         'BYTE ARRAY THAT STORES TEST PARAMETERS SENT FROM THE PC 
+TEMP_BYTE               var     BYTE                             'TEMPORARILY STORES A BYTE FOR DATA CONVERSION
+SERIAL_COUNTER          var     BYTE                             'USED TO NAVIGATE IN SERIAL DATA TRANSMISSION
+
+'DATA STORAGE VARIABLES (MPU-9250)
+RAW_ACCEL_GYRO_DATA     VAR     BYTE[12]            'STORES RAW DATA FROM 9250 ACCEL AND GYRO REGISTERS MSB FIRST(INDEX 0-5 = ACCEL XYZ, 6-11 = GYRO XYZ)
+RAW_MAG_DATA            VAR     BYTE[6]
+GEN_CONFIG_DATA         VAR     BYTE                'STORES THE ACTUAL VALUE THAT WILL BE SENT TO THE GEN_CONFIG REGISTER
+GYRO_CONFIG_DATA        VAR     BYTE                'STORES THE ACTUAL VALUE THAT WILL BE SENT TO THE GYRO_CONFIG REGISTER
+ACCEL_CONFIG_DATA       VAR     BYTE                'STORES THE ACTUAL VALUE THAT WILL BE SENT TO THE ACCEL_CONFIG REGISTER
+ACCEL_CONFIG_2_DATA     VAR     BYTE                'STORES THE ACTUAL VALUE THAT WILL BE SENT TO THE ACCEL_CONFIG_2 REGISTER
+DUMMY                   VAR     BYTE
+DEVICE_ID               VAR     BYTE
+SLAVE_ADDR              VAR     BYTE
+REG_ADDR                VAR     BYTE
+SPI_DATA                VAR     BYTE
+SPI_RETURN              VAR     BYTE
+I2C_DATA                VAR     BYTE
+I2C_RETURN              VAR     BYTE
+
+
+UART_PERIOD_VAR_115200 	con		2        'DO NOT CHANGE, CRITICAL FOR UART
+
+'GENERIC INCREMENTAL VARIABLES
+I                   var     word
+SAMPLE_NUM          VAR     WORD
+INIT_PORTS:
+    output UART_TX
+    output BLUE_LED
+    output MPU9250_CS
+    OUTPUT SDI
+    OUTPUT SCK
+    
+    input UART_RX
+    input INT_PIN
+    INPUT SDO
+    
+INIT_BLINK:
+    FOR I = 0 TO 2
+        BLUE_LED = 1
+        PAUSE 100
+        BLUE_LED = 0
+        PAUSE 100
+        NEXT I
+INIT_COMM_BUSSES:
+    GOSUB CALIBRATE_UART
+    gosub INIT_SPI_SLOW
+    GOSUB CALIBRATE_SPI
+    GOSUB INIT_MPU
+    
+    while 1 == 1
+        BLUE_LED = 1
+        PAUSE 100
+        BLUE_LED = 0
+        PAUSE 100
+        WEND
+    
+    
+    PAUSE 100               'ALLOW BUSES TO INITIALIZE
+MAIN:  
+    WHILE 1 == 1
+        FOR SAMPLE_NUM = 1 TO 10
+            GOSUB READ_9AXIS
+    
+            BLUE_LED = 1
+            GOSUB PRINT_9AXIS
+            GOSUB UART_CRLF
+            BLUE_LED = 0
+            NEXT SAMPLE_NUM
+        wend                        
+
+INIT_MPU:                                     'INITIALIZES PROGRAM VARIABLES AND MPU REGISTERS
+    GOSUB SET_ACCEL_SENS_VAR                  'INITIALIZE VARIABLE FOR THE ACCELEROMETER SENSITIVITY BASED ON CONSTANTS AT THE TOP
+    GOSUB SET_GYRO_SENS_VAR                   'INITIALIZE VARIABLE FOR THE GYROSCOPE SENSITIVITY BASED ON CONSTANTS AT THE TOP
+    GOSUB SET_ACCEL_FILTER_VAR                'INITIALIZE VARIABLE FOR THE ACCELEROMETER FILTER BASED ON CONSTANTS AT THE TOP
+    GOSUB SET_GYRO_FILTER_VAR                 'INITIALIZE VARIABLE FOR THE GYROSCOPE FILTER BASED ON CONSTANTS AT THE TOP
+    gosub INIT_SPI_SLOW
+    
+    REG_ADDR = PWR_MGMT_1_ADDR
+    SPI_DATA = MPU_RESET_CMD
+    GOSUB WRITE_BYTE_9250
+    
+    PAUSE 1000 
+    
+    SPI_RETURN = ~PWR_MGMT_1_DATA
+    WHILE SPI_RETURN != PWR_MGMT_1_DATA
+        REG_ADDR = PWR_MGMT_1_ADDR
+        SPI_DATA = PWR_MGMT_1_DATA 
+        'SPI_DATA = 1 
+        GOSUB write_BYTE_9250
+        GOSUB READ_BYTE_9250
+        WEND
+    
+    PAUSE 1000
+    
+    SPI_RETURN = ~PWR_MGMT_2_DATA
+    WHILE SPI_RETURN != PWR_MGMT_2_DATA
+        REG_ADDR = PWR_MGMT_2_ADDR
+        SPI_DATA = PWR_MGMT_2_DATA 
+        'SPI_DATA = 0
+        GOSUB write_BYTE_9250
+        GOSUB READ_BYTE_9250
+        WEND
+    
+    PAUSE 1000   
+    
+'    SPI_RETURN = ~FIFO_CONFIG_DATA
+'    WHILE SPI_RETURN != FIFO_CONFIG_DATA
+'        REG_ADDR = FIFO_CONFIG_ADDR
+'        SPI_DATA = FIFO_CONFIG_DATA 
+'        'SPI_DATA = 0
+'        GOSUB write_BYTE_9250
+'        GOSUB READ_BYTE_9250
+'        WEND
+'        
+'    PAUSE 100                                 
+    
+    SPI_RETURN = ~GEN_CONFIG_DATA
+    WHILE SPI_RETURN != GEN_CONFIG_DATA
+        REG_ADDR = GEN_CONFIG_ADDR
+        SPI_DATA = GEN_CONFIG_DATA 
+        'SPI_DATA = 1
+        GOSUB WRITE_BYTE_9250
+        GOSUB READ_BYTE_9250
+        WEND
+    
+    PAUSE 1000
+    
+'    SPI_RETURN = ~0
+'    WHILE SPI_RETURN != 0
+'        REG_ADDR = SMPLRT_DIV_ADDR
+'        SPI_DATA = 0 
+'        'SPI_DATA = 0
+'        GOSUB WRITE_BYTE_9250
+'        GOSUB READ_BYTE_9250
+'        WEND
+    
+'    PAUSE 100
+    
+    SPI_RETURN = ~GYRO_CONFIG_DATA
+    WHILE SPI_RETURN != GYRO_CONFIG_DATA
+        REG_ADDR = GYRO_CONFIG_ADDR
+        SPI_DATA = GYRO_CONFIG_DATA 
+        'SPI_DATA = 0
+        GOSUB WRITE_BYTE_9250
+        GOSUB READ_BYTE_9250
+        WEND
+    
+    PAUSE 1000
+    
+    SPI_RETURN = ~ACCEL_CONFIG_DATA
+    WHILE SPI_RETURN != ACCEL_CONFIG_DATA
+        REG_ADDR = ACCEL_CONFIG_ADDR
+        SPI_DATA = ACCEL_CONFIG_DATA 
+        'SPI_DATA = 0
+        GOSUB WRITE_BYTE_9250
+        GOSUB READ_BYTE_9250
+        WEND
+    
+    PAUSE 1000
+    
+    SPI_RETURN = ~ACCEL_CONFIG_2_DATA
+    WHILE SPI_RETURN != ACCEL_CONFIG_2_DATA
+        REG_ADDR = ACCEL_CONFIG_2_ADDR
+        SPI_DATA = ACCEL_CONFIG_2_DATA 
+        GOSUB write_BYTE_9250
+        GOSUB READ_BYTE_9250
+        WEND
+    
+    PAUSE 1000
+    
+'    REG_ADDR = MPU_WHO_AM_I_ADDR
+'    GOSUB READ_BYTE_9250
+'    DEVICE_ID = SPI_RETURN
+'    IF DEVICE_ID != $70 THEN
+'        GOSUB MPU_ERROR
+'        ENDIF
+    REG_ADDR = INT_PIN_CFG_ADDR
+    SPI_DATA = INT_PIN_CFG_DATA 
+    GOSUB READ_BYTE_9250
+    
+    SPI_RETURN = ~INT_PIN_CFG_DATA
+    WHILE SPI_RETURN != INT_PIN_CFG_DATA
+        REG_ADDR = INT_PIN_CFG_ADDR
+        SPI_DATA = INT_PIN_CFG_DATA 
+        GOSUB write_BYTE_9250
+        GOSUB READ_BYTE_9250
+        WEND
+    
+    PAUSE 1000
+    
+    SPI_RETURN = ~USER_CONTROL_DATA
+    WHILE SPI_RETURN != USER_CONTROL_DATA
+        REG_ADDR = USER_CONTROL_ADDR
+        SPI_DATA = USER_CONTROL_DATA 
+        GOSUB WRITE_BYTE_9250
+        GOSUB READ_BYTE_9250
+        WEND
+    
+    PAUSE 1000
+    
+    
+    SPI_RETURN = ~I2C_MSTR_DATA
+    WHILE SPI_RETURN != I2C_MSTR_DATA
+        REG_ADDR = I2C_MSTR_ADDR
+        SPI_DATA = I2C_MSTR_DATA 
+        GOSUB WRITE_BYTE_9250
+        GOSUB READ_BYTE_9250
+        WEND
+        
+    PAUSE 1000
+    
+    SPI_RETURN = ~0
+    WHILE SPI_RETURN != 0
+        REG_ADDR = I2C_SLV0_CNTL
+        SPI_DATA = 0 
+        GOSUB WRITE_BYTE_9250
+        GOSUB READ_BYTE_9250
+        WEND
+        
+    PAUSE 1000
+    
+    SLAVE_ADDR = MAG_ADDR_W
+    REG_ADDR = MAG_CNTL2_ADDR
+    I2C_DATA = MAG_RESET_CMD
+    GOSUB WRITE_BYTE_MAG
+    
+    PAUSE 1000
+    
+    SLAVE_ADDR = MAG_ADDR_W
+    REG_ADDR = 0
+    GOSUB READ_BYTE_MAG
+    DEVICE_ID = I2C_RETURN
+    
+    TX_BYTE = DEVICE_ID
+    GOSUB TX_HEX_BYTE_115200
+    GOSUB UART_CRLF
+    
+    IF DEVICE_ID != $48 THEN
+        GOTO MPU_ERROR
+        ENDIF
+    
+    gosub INIT_SPI
+return
+
+SET_ACCEL_SENS_VAR:                                               'SET CONFIGURATION BITS TO MATCH THE ACCEL_SENSITIVITY CONSTANT
+    SELECT CASE DEF_ACCEL_SENSITIVITY                                 'SELECT THE CASE BASED ON THE VALUE OF ACCEL_SENSITIVITY
+        CASE 2                                                    '2G
+             ACCEL_CONFIG_DATA.4 = 0
+             ACCEL_CONFIG_DATA.3 = 0    
+        CASE 4                                                    '4G
+             ACCEL_CONFIG_DATA.4 = 0
+             ACCEL_CONFIG_DATA.3 = 1    
+        CASE 8                                                    '8G
+             ACCEL_CONFIG_DATA.4 = 1
+             ACCEL_CONFIG_DATA.3 = 0    
+        CASE 16                                                   '16G
+             ACCEL_CONFIG_DATA.4 = 1
+             ACCEL_CONFIG_DATA.3 = 1    
+        CASE ELSE                                                'EXECUTES IF THE USER DID NOT INPUT A VALID NUMBER (8G)
+             ACCEL_CONFIG_DATA.4 = 1
+             ACCEL_CONFIG_DATA.3 = 0  
+    END SELECT
+RETURN
+
+SET_GYRO_SENS_VAR:                                               'SET CONFIGURATION BITS TO MATCH THE GYRO_SENSITIVITY CONSTANT
+    SELECT CASE DEF_GYRO_SENSITIVITY                                 'SELECT THE CASE BASED ON THE VALUE OF GYRO_SENSITIVITY
+        CASE 250                                                 '250DPS
+             GYRO_CONFIG_DATA.4 = 0
+             GYRO_CONFIG_DATA.3 = 0    
+        CASE 500                                                 '500DPS
+             GYRO_CONFIG_DATA.4 = 0
+             GYRO_CONFIG_DATA.3 = 1    
+        CASE 1000                                                '1000DPS
+             GYRO_CONFIG_DATA.4 = 1
+             GYRO_CONFIG_DATA.3 = 0    
+        CASE 2000                                                '2000DPS
+             GYRO_CONFIG_DATA.4 = 1
+             GYRO_CONFIG_DATA.3 = 1    
+        CASE ELSE                                                'EXECUTES IF THE USER DID NOT INPUT A VALID NUMBER (500DPS)
+             GYRO_CONFIG_DATA.4 = 0
+             GYRO_CONFIG_DATA.3 = 1
+    END SELECT
+RETURN
+SET_ACCEL_FILTER_VAR:                                           'SET CONFIGURATION BITS TO MATCH THE ACCEL_FILTER CONSTANT
+    SELECT CASE DEF_ACCEL_FILTER                                    'SELECT THE CASE BASED ON THE VALUE OF ACCEL_FILTER
+        CASE 5                                                  '5 HZ
+             ACCEL_CONFIG_2_DATA.3 = 1
+             ACCEL_CONFIG_2_DATA.2 = 1
+             ACCEL_CONFIG_2_DATA.1 = 1 
+             ACCEL_CONFIG_2_DATA.0 = 0     
+        CASE 10                                                 '10 HZ
+             ACCEL_CONFIG_2_DATA.3 = 1
+             ACCEL_CONFIG_2_DATA.2 = 1
+             ACCEL_CONFIG_2_DATA.1 = 0 
+             ACCEL_CONFIG_2_DATA.0 = 1  
+        CASE 20                                                 '20 HZ
+             ACCEL_CONFIG_2_DATA.3 = 1
+             ACCEL_CONFIG_2_DATA.2 = 1
+             ACCEL_CONFIG_2_DATA.1 = 0 
+             ACCEL_CONFIG_2_DATA.0 = 0  
+        CASE 41                                                 '41 HZ
+             ACCEL_CONFIG_2_DATA.3 = 1
+             ACCEL_CONFIG_2_DATA.2 = 0
+             ACCEL_CONFIG_2_DATA.1 = 1 
+             ACCEL_CONFIG_2_DATA.0 = 1            
+        CASE 92                                                 '92 HZ
+             ACCEL_CONFIG_2_DATA.3 = 1
+             ACCEL_CONFIG_2_DATA.2 = 0
+             ACCEL_CONFIG_2_DATA.1 = 1 
+             ACCEL_CONFIG_2_DATA.0 = 0  
+        CASE 184                                                '184 HZ
+             ACCEL_CONFIG_2_DATA.3 = 1
+             ACCEL_CONFIG_2_DATA.2 = 0
+             ACCEL_CONFIG_2_DATA.1 = 0
+             ACCEL_CONFIG_2_DATA.0 = 1  
+        CASE 460                                                '460 HZ
+             ACCEL_CONFIG_2_DATA.3 = 1
+             ACCEL_CONFIG_2_DATA.2 = 0
+             ACCEL_CONFIG_2_DATA.1 = 0 
+             ACCEL_CONFIG_2_DATA.0 = 0  
+        CASE 1130                                              '1130 HZ
+             ACCEL_CONFIG_2_DATA.3 = 0
+             ACCEL_CONFIG_2_DATA.2 = 0
+             ACCEL_CONFIG_2_DATA.1 = 0 
+             ACCEL_CONFIG_2_DATA.0 = 0  
+        CASE ELSE                                                   'EXECUTES IF THE USER DID NOT INPUT A VALID NUMBER (92HZ)
+             ACCEL_CONFIG_2_DATA.3 = 1
+             ACCEL_CONFIG_2_DATA.2 = 0
+             ACCEL_CONFIG_2_DATA.1 = 1 
+             ACCEL_CONFIG_2_DATA.0 = 0   
+    END SELECT
+RETURN
+SET_GYRO_FILTER_VAR:                                                'SET CONFIGURATION BITS TO MATCH THE GYRO_FILTER CONSTANT
+    SELECT CASE DEF_GYRO_FILTER                                         'SELECT THE CASE BASED ON THE VALUE OF GYRO_FILTER
+        CASE 5                                                      '5 HZ
+             GYRO_CONFIG_DATA.1 = 1
+             GYRO_CONFIG_DATA.0 = 1 
+             GEN_CONFIG_DATA.2 = 1
+             GEN_CONFIG_DATA.1 = 1 
+             GEN_CONFIG_DATA.0 = 0                                  '10 HZ
+        CASE 10
+             GYRO_CONFIG_DATA.1 = 1
+             GYRO_CONFIG_DATA.0 = 1
+             GEN_CONFIG_DATA.2 = 1
+             GEN_CONFIG_DATA.1 = 0 
+             GEN_CONFIG_DATA.0 = 1  
+        CASE 20                                                     '20 HZ
+             GYRO_CONFIG_DATA.1 = 1
+             GYRO_CONFIG_DATA.0 = 1
+             GEN_CONFIG_DATA.2 = 1
+             GEN_CONFIG_DATA.1 = 0 
+             GEN_CONFIG_DATA.0 = 0  
+        CASE 41                                                     '41 HZ
+             GYRO_CONFIG_DATA.1 = 1
+             GYRO_CONFIG_DATA.0 = 1
+             GEN_CONFIG_DATA.2 = 0
+             GEN_CONFIG_DATA.1 = 1 
+             GEN_CONFIG_DATA.0 = 1            
+        CASE 92                                                     '92 HZ
+             GYRO_CONFIG_DATA.1 = 1
+             GYRO_CONFIG_DATA.0 = 1
+             GEN_CONFIG_DATA.2 = 0
+             GEN_CONFIG_DATA.1 = 1 
+             GEN_CONFIG_DATA.0 = 0  
+        CASE 184                                                    '184 HZ
+             GYRO_CONFIG_DATA.1 = 1
+             GYRO_CONFIG_DATA.0 = 1
+             GEN_CONFIG_DATA.2 = 0
+             GEN_CONFIG_DATA.1 = 0
+             GEN_CONFIG_DATA.0 = 1  
+        CASE 250                                                    '250 HZ
+             GYRO_CONFIG_DATA.1 = 1
+             GYRO_CONFIG_DATA.0 = 1
+             GEN_CONFIG_DATA.2 = 0
+             GEN_CONFIG_DATA.1 = 0 
+             GEN_CONFIG_DATA.0 = 0  
+        CASE 3600                                                   '3600 HZ
+             GYRO_CONFIG_DATA.1 = 0
+             GYRO_CONFIG_DATA.0 = 1
+             GEN_CONFIG_DATA.2 = 0
+             GEN_CONFIG_DATA.1 = 0 
+             GEN_CONFIG_DATA.0 = 0
+        CASE 8800                                                   '8800 HZ
+             GYRO_CONFIG_DATA.1 = 0
+             GYRO_CONFIG_DATA.0 = 0
+             GEN_CONFIG_DATA.2 = 0
+             GEN_CONFIG_DATA.1 = 0 
+             GEN_CONFIG_DATA.0 = 0  
+        CASE ELSE                                                   'EXECUTES IF THE USER DID NOT INPUT A VALID NUMBER (92HZ)
+             GYRO_CONFIG_DATA.1 = 1
+             GYRO_CONFIG_DATA.0 = 1
+             GEN_CONFIG_DATA.2 = 0
+             GEN_CONFIG_DATA.1 = 1 
+             GEN_CONFIG_DATA.0 = 0   
+    END SELECT
+RETURN
+
+READ_9AXIS:
+    'ACCELEROMETER
+    MPU9250_CS = 0                            'CS GOES LOW TO START A SEQUENCE                        
+    SSP1BUF = ACCEL_XOUT_H_ADDR | READ_FLAG   'SEND 1 BYTE OF THE DESIRED ADDRESS MASKED WITH THE READ FLAG TO THE 9250
+    WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+    WEND
+    DUMMY = SSP1BUF                           'CLEAR THE BUFFER FULL FLAG BY READING THE DATA (SSP1STAT.0)
+    
+    'X AXIS
+    SSP1BUF = 10                               'RECEIVE NEXT BYTE OF DATA
+    WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+    WEND                                      'RECEIVE NEXT BYTE OF DATA
+    RAW_ACCEL_GYRO_DATA[1] = SSP1BUF          'STORE DATA AND AUTOMATICALLY CLEAR THE BUFFER FULL FLAG (SSP1STAT.0)
+    SSP1BUF = 0                               'RECEIVE NEXT BYTE OF DATA
+    WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+    WEND                                      'RECEIVE NEXT BYTE OF DATA
+    RAW_ACCEL_GYRO_DATA[0] = SSP1BUF          'STORE DATA AND AUTOMATICALLY CLEAR THE BUFFER FULL FLAG (SSP1STAT.0)
+    
+    'Y AXIS
+    SSP1BUF = 10                              'RECEIVE NEXT BYTE OF DATA
+    WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+    WEND                                      'RECEIVE NEXT BYTE OF DATA
+    RAW_ACCEL_GYRO_DATA[3] = SSP1BUF          'STORE DATA AND AUTOMATICALLY CLEAR THE BUFFER FULL FLAG (SSP1STAT.0)
+    SSP1BUF = 0                               'RECEIVE NEXT BYTE OF DATA
+    WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+    WEND                                      'RECEIVE NEXT BYTE OF DATA
+    RAW_ACCEL_GYRO_DATA[2] = SSP1BUF          'STORE DATA AND AUTOMATICALLY CLEAR THE BUFFER FULL FLAG (SSP1STAT.0)
+    
+    
+    'Z AXIS
+    SSP1BUF = 0                               'RECEIVE NEXT BYTE OF DATA
+    WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+    WEND                                      'RECEIVE NEXT BYTE OF DATA
+    RAW_ACCEL_GYRO_DATA[5] = SSP1BUF          'STORE DATA AND AUTOMATICALLY CLEAR THE BUFFER FULL FLAG (SSP1STAT.0)
+    SSP1BUF = 0                               'RECEIVE NEXT BYTE OF DATA
+    WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+    WEND                                      'RECEIVE NEXT BYTE OF DATA
+    RAW_ACCEL_GYRO_DATA[4] = SSP1BUF          'STORE DATA AND AUTOMATICALLY CLEAR THE BUFFER FULL FLAG (SSP1STAT.0)
+    MPU9250_CS = 1 
+    
+    'GYROSCOPE
+    MPU9250_CS = 0                            'CS GOES LOW TO START A SEQUENCE                        
+    SSP1BUF = GYRO_XOUT_H_ADDR | READ_FLAG    'SEND 1 BYTE OF THE DESIRED ADDRESS MASKED WITH THE READ FLAG TO THE 9250
+    WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+    WEND
+    DUMMY = SSP1BUF                           'CLEAR THE BUFFER FULL FLAG BY READING THE DATA (SSP1STAT.0)
+    
+    'X AXIS
+    SSP1BUF = 0                               'RECEIVE NEXT BYTE OF DATA
+    WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+    WEND                                      'RECEIVE NEXT BYTE OF DATA
+    RAW_ACCEL_GYRO_DATA[7] = SSP1BUF          'STORE DATA AND AUTOMATICALLY CLEAR THE BUFFER FULL FLAG (SSP1STAT.0)
+    SSP1BUF = 0                               'RECEIVE NEXT BYTE OF DATA
+    WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+    WEND                                      'RECEIVE NEXT BYTE OF DATA
+    RAW_ACCEL_GYRO_DATA[6] = SSP1BUF          'STORE DATA AND AUTOMATICALLY CLEAR THE BUFFER FULL FLAG (SSP1STAT.0)
+    
+    'Y AXIS
+    SSP1BUF = 0                               'RECEIVE NEXT BYTE OF DATA
+    WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+    WEND                                      'RECEIVE NEXT BYTE OF DATA
+    RAW_ACCEL_GYRO_DATA[9] = SSP1BUF          'STORE DATA AND AUTOMATICALLY CLEAR THE BUFFER FULL FLAG (SSP1STAT.0)
+    SSP1BUF = 0                               'RECEIVE NEXT BYTE OF DATA
+    WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+    WEND                                      'RECEIVE NEXT BYTE OF DATA
+    RAW_ACCEL_GYRO_DATA[8] = SSP1BUF          'STORE DATA AND AUTOMATICALLY CLEAR THE BUFFER FULL FLAG (SSP1STAT.0)
+    
+    
+    'Z AXIS
+    SSP1BUF = 0                               'RECEIVE NEXT BYTE OF DATA
+    WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+    WEND                                      'RECEIVE NEXT BYTE OF DATA
+    RAW_ACCEL_GYRO_DATA[11] = SSP1BUF          'STORE DATA AND AUTOMATICALLY CLEAR THE BUFFER FULL FLAG (SSP1STAT.0)
+    SSP1BUF = 0                               'RECEIVE NEXT BYTE OF DATA
+    WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+    WEND                                      'RECEIVE NEXT BYTE OF DATA
+    RAW_ACCEL_GYRO_DATA[10] = SSP1BUF          'STORE DATA AND AUTOMATICALLY CLEAR THE BUFFER FULL FLAG (SSP1STAT.0)
+    MPU9250_CS = 1 
+
+    'IF SAMPLE_NUM // 10 == 0 THEN
+        'MAGNETOMETER
+        'SET SLAVE ADDRESS TO MAG'S READ ADDRESS 
+        MPU9250_CS = 0                            'WAKE UP 9250        
+        SSP1BUF = I2C_SLV0_ADDR                      'TELL 9250 THE REGISTER THAT YOU WANT TO ACCESS
+        WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+        WEND
+        DUMMY = SSP1BUF                           'CLEAR THE BUFFER FULL FLAG BY READING THE DATA (SSP1STAT.0)
+        SSP1BUF = MAG_ADDR_W | READ_FLAG                'SEND DATA TO REGISTER
+        WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+        WEND
+        DUMMY = SSP1BUF                           'CLEAR THE BUFFER FULL FLAG BY READING THE DATA (SSP1STAT.0)
+        MPU9250_CS = 1  
+        
+        'FILL SLAVE DATA BUFFER WITH CNTL1 CONFIG DATA 
+        MPU9250_CS = 0                            'WAKE UP 9250        
+        SSP1BUF = I2C_SLV0_REG                      'TELL 9250 THE REGISTER THAT YOU WANT TO ACCESS
+        WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+        WEND
+        DUMMY = SSP1BUF                           'CLEAR THE BUFFER FULL FLAG BY READING THE DATA (SSP1STAT.0)
+        SSP1BUF = MAG_XOUT_L_ADDR           'SEND DATA TO REGISTER
+        WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+        WEND
+        DUMMY = SSP1BUF                           'CLEAR THE BUFFER FULL FLAG BY READING THE DATA (SSP1STAT.0)
+        MPU9250_CS = 1 
+        
+        'TELL 9250 TO READ 6 BYTES FROM MAG
+        MPU9250_CS = 0                            'WAKE UP 9250        
+        SSP1BUF = I2C_SLV0_CNTL                      'TELL 9250 THE REGISTER THAT YOU WANT TO ACCESS
+        WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+        WEND
+        DUMMY = SSP1BUF                           'CLEAR THE BUFFER FULL FLAG BY READING THE DATA (SSP1STAT.0)
+        SSP1BUF = I2C_EN_CMD | 7                  'READ 6 BYTES FROM MAG
+        WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+        WEND
+        DUMMY = SSP1BUF                           'CLEAR THE BUFFER FULL FLAG BY READING THE DATA (SSP1STAT.0)
+        MPU9250_CS = 1 
+        
+        PAUSE 10
+        
+        'START READ
+        MPU9250_CS = 0                            'WAKE UP 9250        
+        SSP1BUF = EXT_SENS_DATA_00_REG | READ_FLAG'TELL 9250 THE REGISTER THAT YOU WANT TO ACCESS
+        WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+        WEND
+        DUMMY = SSP1BUF                           'CLEAR THE BUFFER FULL FLAG BY READING THE DATA (SSP1STAT.0)
+    
+        'X AXIS
+        SSP1BUF = 0                 'SEND DATA TO REGISTER
+        WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+        WEND
+        RAW_MAG_DATA[1] = SSP1BUF                           'CLEAR THE BUFFER FULL FLAG BY READING THE DATA (SSP1STAT.0)
+        SSP1BUF = 0                 'SEND DATA TO REGISTER
+        WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+        WEND
+        RAW_MAG_DATA[0] = SSP1BUF                           'CLEAR THE BUFFER FULL FLAG BY READING THE DATA (SSP1STAT.0)
+        
+        'Y AXIS
+        SSP1BUF = 0                 'SEND DATA TO REGISTER
+        WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+        WEND
+        RAW_MAG_DATA[3] = SSP1BUF                           'CLEAR THE BUFFER FULL FLAG BY READING THE DATA (SSP1STAT.0)
+        SSP1BUF = 0                 'SEND DATA TO REGISTER
+        WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+        WEND
+        RAW_MAG_DATA[2] = SSP1BUF                           'CLEAR THE BUFFER FULL FLAG BY READING THE DATA (SSP1STAT.0)
+        
+        'Z AXIS
+        SSP1BUF = 0                 'SEND DATA TO REGISTER
+        WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+        WEND
+        RAW_MAG_DATA[5] = SSP1BUF                           'CLEAR THE BUFFER FULL FLAG BY READING THE DATA (SSP1STAT.0)
+        SSP1BUF = 0                 'SEND DATA TO REGISTER
+        WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+        WEND
+        RAW_MAG_DATA[4] = SSP1BUF                           'CLEAR THE BUFFER FULL FLAG BY READING THE DATA (SSP1STAT.0)
+
+        MPU9250_CS = 1 
+    
+        'TELL MAG TO START TAKING NEW SAMPLE
+        MPU9250_CS = 0                            'WAKE UP 9250        
+        SSP1BUF = I2C_SLV0_ADDR                      'TELL 9250 THE REGISTER THAT YOU WANT TO ACCESS
+        WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+        WEND
+        DUMMY = SSP1BUF                           'CLEAR THE BUFFER FULL FLAG BY READING THE DATA (SSP1STAT.0)
+        SSP1BUF = MAG_ADDR_w               'SEND DATA TO REGISTER
+        WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+        WEND
+        DUMMY = SSP1BUF                           'CLEAR THE BUFFER FULL FLAG BY READING THE DATA (SSP1STAT.0)
+        MPU9250_CS = 1 
+        
+        MPU9250_CS = 0                            'WAKE UP 9250        
+        SSP1BUF = I2C_SLV0_REG                      'TELL 9250 THE REGISTER THAT YOU WANT TO ACCESS
+        WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+        WEND
+        DUMMY = SSP1BUF                           'CLEAR THE BUFFER FULL FLAG BY READING THE DATA (SSP1STAT.0)
+        SSP1BUF = MAG_CNTL1_ADDR               'SEND DATA TO REGISTER
+        WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+        WEND
+        DUMMY = SSP1BUF                           'CLEAR THE BUFFER FULL FLAG BY READING THE DATA (SSP1STAT.0)
+        MPU9250_CS = 1 
+           
+        'FILL SLAVE DATA BUFFER WITH CNTL1 CONFIG DATA 
+        MPU9250_CS = 0                            'WAKE UP 9250        
+        SSP1BUF = I2C_SLV0_DATA                      'TELL 9250 THE REGISTER THAT YOU WANT TO ACCESS
+        WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+        WEND
+        DUMMY = SSP1BUF                           'CLEAR THE BUFFER FULL FLAG BY READING THE DATA (SSP1STAT.0)
+        SSP1BUF = CNTL1_CONFIG_DATA             'SEND DATA TO REGISTER
+        WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+        WEND
+        DUMMY = SSP1BUF                           'CLEAR THE BUFFER FULL FLAG BY READING THE DATA (SSP1STAT.0)
+        MPU9250_CS = 1 
+        
+        'SEND CONFIG DATA TO CNTL1 REGISTER
+        MPU9250_CS = 0                            'WAKE UP 9250        
+        SSP1BUF = I2C_SLV0_CNTL                      'TELL 9250 THE REGISTER THAT YOU WANT TO ACCESS
+        WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+        WEND
+        DUMMY = SSP1BUF                           'CLEAR THE BUFFER FULL FLAG BY READING THE DATA (SSP1STAT.0)
+        SSP1BUF = $81               'SEND DATA TO REGISTER
+        WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+        WEND
+        DUMMY = SSP1BUF                           'CLEAR THE BUFFER FULL FLAG BY READING THE DATA (SSP1STAT.0)
+        MPU9250_CS = 1 
+        'ENDIF
+RETURN 
+
+PRINT_9AXIS:
+    FOR I = 0 TO 10 STEP 2
+        TX_BYTE = RAW_ACCEL_GYRO_DATA[I + 1]
+        GOSUB TX_HEX_BYTE_115200
+        TX_BYTE = RAW_ACCEL_GYRO_DATA[I]
+        GOSUB TX_HEX_BYTE_115200
+        TX_DATA = 44
+        GOSUB UART_TX_VAR_115200
+        NEXT I
+    FOR I = 0 TO 5 STEP 2
+        TX_BYTE = RAW_MAG_DATA[I + 1]
+        GOSUB TX_HEX_BYTE_115200
+        TX_BYTE = RAW_MAG_DATA[I]
+        GOSUB TX_HEX_BYTE_115200
+        TX_DATA = 44
+        GOSUB UART_TX_VAR_115200
+        NEXT I
+    GOSUB UART_CRLF
+RETURN
+    
+'****************ERROR SUBROUTINES************************************************************
+MPU_ERROR:                  'INFINITE LED BLINK ERROR LOOP
+    WHILE 1 == 1
+        BLUE_LED = 1
+        'PAUSE 500
+        GOSUB READ_9AXIS
+        gosub PRINT_9AXIS
+        BLUE_LED = 0
+        PAUSE 100
+        WEND
+RETURN   
+'****************FUNDAMENTAL SPI SUBROUTINES**************************************************
+INIT_SPI:                   'SETS NECESSARY REGISTERS FOR HARDWARE SPI
+    SSP1STAT = %00000000    'DATA SAMPLED IN MIDDLE OF DATA OUTPUT TIME, TRANSMIT OCCURS ON TRANSITION FROM IDLE TO ACTIVE CLOCK, RESET FLAGS
+    SSP1CON1 = %00110000    'ENABLE MSSP MODULE, ENABLE SPI AS MASTER WITH CLOCK SPEED = FOSC/4, CLOCK IDLES HIGH 
+    SSP1CON3 = %00010000    'ENABLE BUFFER OVERWRITING SO IF THE DATA IS WRITTEN TO THE BUFFER WHILE A WRITE IS IN PROGRESS THE MSSP DOESN'T CRASH
+    MPU9250_CS = 1
+RETURN
+
+INIT_SPI_SLOW:                   'SETS NECESSARY REGISTERS FOR HARDWARE SPI
+    SSP1STAT = %00000000    'DATA SAMPLED IN MIDDLE OF DATA OUTPUT TIME, TRANSMIT OCCURS ON TRANSITION FROM IDLE TO ACTIVE CLOCK, RESET FLAGS
+    SSP1CON1 = %00110010    'ENABLE MSSP MODULE, ENABLE SPI AS MASTER WITH CLOCK SPEED = FOSC/64, CLOCK IDLES HIGH 
+    SSP1CON3 = %00010000    'ENABLE BUFFER OVERWRITING SO IF THE DATA IS WRITTEN TO THE BUFFER WHILE A WRITE IS IN PROGRESS THE MSSP DOESN'T CRASH
+    MPU9250_CS = 1
+RETURN
+
+CALIBRATE_SPI:                                'DO NOT ATTEMPT TO TALK TO PART, JUST SHIFT DATA OUT ON THE BUS TO INITIALIZE THE BUFFER
+    SSP1BUF = 0                               'RECEIVE NEXT BYTE OF DATA
+    WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+    WEND                                      'RECEIVE NEXT BYTE OF DATA
+    DUMMY = SSP1BUF                           'STORE DATA AND AUTOMATICALLY CLEAR THE BUFFER FULL FLAG (SSP1STAT.0)
+RETURN
+
+WRITE_BYTE_9250:
+    MPU9250_CS = 0                            'CS GOES LOW TO START A SEQUENCE                        
+    pauseus 100
+    SSP1BUF = REG_ADDR                        'SEND 1 BYTE OF THE DESIRED ADDRESS MASKED WITH THE READ FLAG TO THE 9250
+    WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+    WEND
+    DUMMY = SSP1BUF                           'CLEAR THE BUFFER FULL FLAG BY READING THE DATA (SSP1STAT.0)
+    SSP1BUF = SPI_DATA
+    WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+    WEND                                      'RECEIVE NEXT BYTE OF DATA
+    SPI_RETURN = SSP1BUF          'STORE DATA AND AUTOMATICALLY CLEAR THE BUFFER FULL FLAG (SSP1STAT.0)
+    MPU9250_CS = 1
+RETURN
+
+READ_BYTE_9250:
+    MPU9250_CS = 0                            'CS GOES LOW TO START A SEQUENCE                        
+    pauseus 100
+    SSP1BUF = REG_ADDR | READ_FLAG   'SEND 1 BYTE OF THE DESIRED ADDRESS MASKED WITH THE READ FLAG TO THE 9250
+    WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+    WEND
+    DUMMY = SSP1BUF                           'CLEAR THE BUFFER FULL FLAG BY READING THE DATA (SSP1STAT.0)
+    SSP1BUF = SPI_DATA
+    WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+    WEND                                      'RECEIVE NEXT BYTE OF DATA
+    SPI_RETURN = SSP1BUF          'STORE DATA AND AUTOMATICALLY CLEAR THE BUFFER FULL FLAG (SSP1STAT.0)
+    MPU9250_CS = 1
+RETURN
+
+WRITE_BYTE_MAG:
+    'SEND CONFIG DATA TO CNTL1 REGISTER
+    MPU9250_CS = 0                            'WAKE UP 9250        
+    pauseus 100
+    SSP1BUF = I2C_SLV0_CNTL                      'TELL 9250 THE REGISTER THAT YOU WANT TO ACCESS
+    WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+    WEND
+    DUMMY = SSP1BUF                           'CLEAR THE BUFFER FULL FLAG BY READING THE DATA (SSP1STAT.0)
+    SSP1BUF = 0                               'SEND DATA TO REGISTER
+    WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+    WEND
+    DUMMY = SSP1BUF                           'CLEAR THE BUFFER FULL FLAG BY READING THE DATA (SSP1STAT.0)
+    MPU9250_CS = 1 
+    
+    pause 100
+    
+    'INITIALIZE SLAVE ADDRESS OF AK8963
+    MPU9250_CS = 0                            'WAKE UP 9250        
+    pauseus 100
+    SSP1BUF = I2C_SLV0_ADDR                   'TELL 9250 THE REGISTER THAT YOU WANT TO ACCESS
+    WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+    WEND
+    DUMMY = SSP1BUF                           'CLEAR THE BUFFER FULL FLAG BY READING THE DATA (SSP1STAT.0)
+    SSP1BUF = SLAVE_ADDR >> 1                 'SEND DATA TO REGISTER
+    WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+    WEND
+    DUMMY = SSP1BUF                           'CLEAR THE BUFFER FULL FLAG BY READING THE DATA (SSP1STAT.0)
+    MPU9250_CS = 1 
+    
+    PAUSE 100 
+    
+    'FILL SLAVE DATA BUFFER WITH CNTL1 CONFIG DATA 
+    MPU9250_CS = 0                            'WAKE UP 9250        
+    pauseus 100
+    SSP1BUF = I2C_SLV0_REG                      'TELL 9250 THE REGISTER THAT YOU WANT TO ACCESS
+    WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+    WEND
+    DUMMY = SSP1BUF                           'CLEAR THE BUFFER FULL FLAG BY READING THE DATA (SSP1STAT.0)
+    SSP1BUF = REG_ADDR               'SEND DATA TO REGISTER
+    WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+    WEND
+    DUMMY = SSP1BUF                           'CLEAR THE BUFFER FULL FLAG BY READING THE DATA (SSP1STAT.0)
+    MPU9250_CS = 1 
+    
+    PAUSE 100 
+    
+    'FILL SLAVE DATA BUFFER WITH CNTL1 CONFIG DATA 
+    MPU9250_CS = 0                            'WAKE UP 9250        
+    pauseus 100
+    SSP1BUF = I2C_SLV0_DATA                   'TELL 9250 THE REGISTER THAT YOU WANT TO ACCESS
+    WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+    WEND
+    DUMMY = SSP1BUF                           'CLEAR THE BUFFER FULL FLAG BY READING THE DATA (SSP1STAT.0)
+    SSP1BUF = I2C_DATA                        'SEND DATA TO REGISTER
+    WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+    WEND
+    DUMMY = SSP1BUF                           'CLEAR THE BUFFER FULL FLAG BY READING THE DATA (SSP1STAT.0)
+    MPU9250_CS = 1 
+    
+    PAUSE 100 
+    
+    'SEND CONFIG DATA TO CNTL1 REGISTER
+    MPU9250_CS = 0                            'WAKE UP 9250        
+    pauseus 100
+    SSP1BUF = I2C_SLV0_CNTL                      'TELL 9250 THE REGISTER THAT YOU WANT TO ACCESS
+    WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+    WEND
+    DUMMY = SSP1BUF                           'CLEAR THE BUFFER FULL FLAG BY READING THE DATA (SSP1STAT.0)
+    SSP1BUF = $81                             'SEND DATA TO REGISTER
+    WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+    WEND
+    DUMMY = SSP1BUF                           'CLEAR THE BUFFER FULL FLAG BY READING THE DATA (SSP1STAT.0)
+    MPU9250_CS = 1 
+    
+    pause 100
+RETURN
+
+READ_BYTE_MAG:
+    'SEND CONFIG DATA TO CNTL1 REGISTER
+    MPU9250_CS = 0                            'WAKE UP 9250        
+    pauseus 100
+    SSP1BUF = I2C_SLV0_CNTL                      'TELL 9250 THE REGISTER THAT YOU WANT TO ACCESS
+    WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+    WEND
+    DUMMY = SSP1BUF                           'CLEAR THE BUFFER FULL FLAG BY READING THE DATA (SSP1STAT.0)
+    SSP1BUF = 0                               'SEND DATA TO REGISTER
+    WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+    WEND
+    DUMMY = SSP1BUF                           'CLEAR THE BUFFER FULL FLAG BY READING THE DATA (SSP1STAT.0)
+    MPU9250_CS = 1 
+    
+    pause 100
+    
+    'INITIALIZE SLAVE ADDRESS OF AK8963
+    MPU9250_CS = 0                            'WAKE UP 9250        
+    pauseus 100
+    SSP1BUF = I2C_SLV0_ADDR                   'TELL 9250 THE REGISTER THAT YOU WANT TO ACCESS
+    WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+    WEND
+    DUMMY = SSP1BUF                           'CLEAR THE BUFFER FULL FLAG BY READING THE DATA (SSP1STAT.0)
+    SSP1BUF = SLAVE_ADDR >> 1                 'SEND DATA TO REGISTER
+    WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+    WEND
+    DUMMY = SSP1BUF                           'CLEAR THE BUFFER FULL FLAG BY READING THE DATA (SSP1STAT.0)
+    MPU9250_CS = 1 
+    
+    PAUSE 100 
+    
+    'FILL SLAVE DATA BUFFER WITH CNTL1 CONFIG DATA 
+    MPU9250_CS = 0                            'WAKE UP 9250        
+    pauseus 100
+    SSP1BUF = I2C_SLV0_REG                      'TELL 9250 THE REGISTER THAT YOU WANT TO ACCESS
+    WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+    WEND
+    DUMMY = SSP1BUF                           'CLEAR THE BUFFER FULL FLAG BY READING THE DATA (SSP1STAT.0)
+    SSP1BUF = REG_ADDR               'SEND DATA TO REGISTER
+    WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+    WEND
+    DUMMY = SSP1BUF                           'CLEAR THE BUFFER FULL FLAG BY READING THE DATA (SSP1STAT.0)
+    MPU9250_CS = 1 
+    
+    PAUSE 100 
+    
+    'SEND CONFIG DATA TO CNTL1 REGISTER
+    MPU9250_CS = 0                            'WAKE UP 9250        
+    pauseus 100
+    SSP1BUF = I2C_SLV0_CNTL                      'TELL 9250 THE REGISTER THAT YOU WANT TO ACCESS
+    WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+    WEND
+    DUMMY = SSP1BUF                           'CLEAR THE BUFFER FULL FLAG BY READING THE DATA (SSP1STAT.0)
+    SSP1BUF = I2C_EN_CMD | 1                  'SEND DATA TO REGISTER
+    WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+    WEND
+    DUMMY = SSP1BUF                           'CLEAR THE BUFFER FULL FLAG BY READING THE DATA (SSP1STAT.0)
+    MPU9250_CS = 1 
+    
+    PAUSE 100 
+    
+    MPU9250_CS = 0                            'WAKE UP 9250        
+    pauseus 100
+    SSP1BUF = EXT_SENS_DATA_00_REG | READ_FLAG                      'TELL 9250 THE REGISTER THAT YOU WANT TO ACCESS
+    WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+    WEND
+    DUMMY = SSP1BUF                           'CLEAR THE BUFFER FULL FLAG BY READING THE DATA (SSP1STAT.0)
+    SSP1BUF = 0                               'SEND DATA TO REGISTER
+    WHILE SSP1STAT.0 == 0                     'WAIT FOR TRANSMISSION TO COMPLETE
+    WEND
+    I2C_RETURN = SSP1BUF                      'CLEAR THE BUFFER FULL FLAG BY READING THE DATA (SSP1STAT.0)
+    MPU9250_CS = 1 
+RETURN    
+'****************FUNDAMENTAL UART SUBROUTINES*************************************************		
+CALIBRATE_UART:
+    for I = 0 to 25
+        TX_DATA = 0
+        gosub UART_TX_VAR_115200
+        next I
+return	
+UART_CRLF:
+    TX_DATA = 13  
+    gosub UART_TX_VAR_115200  
+    TX_DATA = 10
+    gosub UART_TX_VAR_115200     
+RETURN
+    	
+TX_HEX_BYTE_115200:                     'CONVERTS VALUE IN TX_BYTE VARIABLE TO HEXADECIMAL STRING AND TRANSMITS IT VIA UART (ASCII) (NOT USED IN THIS REVISION)
+	FOR HEX_DIGIT_COUNTER = 0 TO 1      'LOOPS THROUGH BOTH DIGITS OF THE HEX BYTE
+		IF HEX_DIGIT_COUNTER == 0 THEN  'EXECUTES IF THE PROGRAM IS CURRENTLY DETERMINING HOW LARGE THE 16'S PLACE DIGIT SHOULD BE
+			HEX_INDEX = TX_BYTE/16      'DETERMINES WHICH CHARACTER TO LOOK UP IN THE SELECT CASE
+		ELSE                            'EXECUTES IF THE PROGRAM IS CURRENTLY DETERMINING HOW LARGE THE 1'S PLACE DIGIT SHOULD BE
+			HEX_INDEX = TX_BYTE // 16   'DETERMINES WHICH CHARACTER TO LOOK UP IN THE SELECT CASE
+			ENDIF
+		
+		SELECT CASE HEX_INDEX           'LOOK UP WHICH ASCII CHARACTER CORRESPONDS TO THE HEX_INDEX (EX. HEX_INDEX = 14, ASCII EQUIVALENT IS "E") 
+			CASE 0
+				TX_DATA = "0"
+			CASE 1
+				TX_DATA = "1"
+			CASE 2
+				TX_DATA = "2"
+			CASE 3
+				TX_DATA = "3"
+			CASE 4
+				TX_DATA = "4"
+			CASE 5
+				TX_DATA = "5"
+			CASE 6
+				TX_DATA = "6"
+			CASE 7
+				TX_DATA = "7"
+			CASE 8
+				TX_DATA = "8"
+			CASE 9
+				TX_DATA = "9"
+			CASE 10
+				TX_DATA = "A"
+			CASE 11
+				TX_DATA = "B"
+			CASE 12
+				TX_DATA = "C"
+			CASE 13
+				TX_DATA = "D"
+			CASE 14
+				TX_DATA = "E"
+			CASE 15
+				TX_DATA = "F"
+			END SELECT	
+		gosub UART_TX_VAR_115200        'TRANMSIT THE VALUE OF TX_BYTE AT 115200 BAUD
+	NEXT HEX_DIGIT_COUNTER              'LOOP
+RETURN
+		
+UART_TX_VAR_115200:                     'TRANSMITS VALUE OF TX_DATA VARIABLE OVER UART AT 115200 BAUD (BIT BANGED)
+	OUTPUT UART_TX                      'Change UART_TX from INPUT to OUTPUT (Set as INPUT when UART not is use to avoid programming conflicts)
+    UART_TX = 0							'START BIT
+	pauseus UART_PERIOD_VAR_115200		'DELAY TO REACH APPROXIMATE PULSE WIDTH
+	gosub waste_time                	'USED FOR PULSE WIDTH TUNING
+	gosub waste_time                	'USED FOR PULSE WIDTH TUNING
+    for BIT_INDEX = 0 to 7              'LOOPS THROUGH EACH BIT OF THE VARIABLE
+		UART_TX = TX_DATA.0[BIT_INDEX]  'LOOKUP BIT STATE LSB FIRST
+		pauseus UART_PERIOD_VAR_115200  'DELAY TO REACH APPROXIMATE PULSE WIDTH
+		gosub waste_time                'USED FOR PULSE WIDTH TUNING
+		next BIT_INDEX
+	pauseus 3                           'DELAY TO REACH APPROXIMATE PULSE WIDTH
+    UART_TX = 1      			        'STOP BIT
+	pauseus UART_PERIOD_VAR_115200      'DELAY TO REACH APPROXIMATE PULSE WIDTH
+	pauseus 3
+    INPUT UART_TX                       'Change UART_TX back to INPUT (Set as INPUT when UART not is use to avoid programming conflicts)
+return                         
+				
+WASTE_TIME:                            'DUMMY INSTRUCTION CYCLE FOR ACCURATE CLOCKING ON UART
+return
+
+        
+'SUBROUTINES********************************************************************
+disable
+INTERRUPT_HANDLER:  '**NOTE: YOU CANNOT EXECUTE A SUBROUTINE WITHIN THE INTERRUPT HANDLER
+    TMR0H = (65535 - TMR0_TICK_THRESHOLD) / 256     'SET HIGH BYTE OF TMR0 VALUE SO IT OVERFLOWS AT THE DESIRED PERIOD
+    TMR0L = (65535 - TMR0_TICK_THRESHOLD) // 256    'SET LOW BYTE OF TMR0 VALUE SO IT OVERFLOWS AT THE DESIRED PERIOD
+    INTCON.2 = 0                                                       'RESET TMR0 OVERFLOW INTERRUPT
+    INT_pin = 1
+    INT_PIN = 0
+    resume     
+enable
+    
+INIT_TMR0:
+    T0CON = %10000000                               'ENABLES TIMER0, SETS AS 16-BIT, SET CLKOUT (T0CKI PIN) AS SOURCE, 
+                                                    'INCREMENT ON RISING EDGE OF T0CKI PIN, ASSIGN PRESCALER OF 8 (PRECISION OF 250nS)
+                                                    
+    TMR0H = (65535 - TMR0_TICK_THRESHOLD) / 256     'SET HIGH BYTE OF TMR0 VALUE SO IT OVERFLOWS AT THE DESIRED PERIOD
+    TMR0L = (65535 - TMR0_TICK_THRESHOLD) // 256    'SET LOW BYTE OF TMR0 VALUE SO IT OVERFLOWS AT THE DESIRED PERIOD
+    INTCON.2 = 0    
+    RETURN
+
+
+
+        

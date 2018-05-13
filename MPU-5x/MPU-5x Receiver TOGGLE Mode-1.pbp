@@ -1,0 +1,232 @@
+'****************************************************************
+'*  Name    : MPU-5x Receiver TOGGLE Mode-1.pbp                 *
+'*  Author  : Eric L. Canfield                                  *
+'*  Notice  : Copyright (c) 2018 nth Solutions LLC.             *
+'*          : All Rights Reserved                               *
+'*  Date    : 3/23/2018                                         *
+'*  Version : 1.0                                               *
+'*  Notes   :                                                   *
+'*          :                                                   *
+'*          :                                                   *
+'*************** Initialization Template Notes ******************
+'*  This program is to only be used to verify that MPU-5x PCB's *
+'*  can be programmed and execute minimal code (PB + GRN_LED)   *
+'************* Communications Notes *****************************
+'* In order for both sets of ports to operate without           *
+'* interfering, they must always be set as INPUTS (high         *
+'* impedance), except during their called operations.           *
+'* Paralleled Ports:                                            *
+'*       RB6/PGC (N/A) || RB0 (UART_RX)                         *
+'*       RB7/PGD (DSP) || RC7 (UART_TX)                         *
+'********************PROGRAM DESCRIPTION*************************
+
+
+                                
+
+'******************FLASH MEMORY STRUCTURE************************
+'* METADATA SECTOR ADDRESSES: 0-504                             *
+'* VALID TESTING DATA ADDRESSES: 512 - 4,294,967,295            *
+'* TEST DATA BYTES SAVED PER SECTOR: 504                        *
+'* WHEN TESTING DATA IS BEING COLLECTED, THE PROGRAM WILL       *
+'* SAVE DATA IN THE FIRST 504 BYTES OF EACH SECTOR. ONCE THE    *
+'* 504TH BYTE IS SAVED, THE PROGRAM MOVES TO THE NEXT SECTOR    *
+'* BECAUSE THE FLASH MEMORY CHIP WILL WRAP AROUND AND OVERWRITE *
+'* THE BEGINNING OF THE CURRENT SECTOR WHEN BLOCK WRITING       *
+'* OTHERWISE.                                                   *
+'****************COMMUNICATION PROTOCOLS*************************
+'* MPU-9250: I2C (HARDWARE)                                     *
+'* S25FL127S FLASH MEMORY: SPI (HARDWARE)                       *
+'* PC: UART (BIT BANGED)                                        *
+'***************PROGRAMMER CONFIGURATIONS************************
+'* OSCILLATOR: HS (MEDIUM POWER)                                *
+'* PLL: ENABLED                                                 *
+'* PRIMARY CLOCK: ENABLED                                       *
+'* FAILSAFE CLOCK MONITOR: DISABLED                             *
+'* INTERNAL EXTERNAL SWITCHOVER: DISABLED                       *
+'* POWER UP TIMER: ENABLED                                      *
+'* BROWN OUT RESET: DISABLED                                    *
+'* BROWN OUT RESET VOLTAGE: 1.9V                                *
+'* WATCHDOG TIMER: ENABLED (disable if no NAP's are used)       *
+'* WATCHDOG TIMER POSTSCALER: 1:32768   (1:1 if NAP's are used) *
+'* CCP2 MULTIPLEXED WITH: RC1                                   *
+'* PORTB RESET STATE: DIGITAL I/O                               *
+'* CCP3 MULTIPLEXED WITH: RB5                                   *
+'* HFINTOSC FAST START: NOT DELAYED                             *
+'* T3CKI MULTIPLEXED WITH: RC0                                  *
+'* CCP2 B MULTPLEXED WITH: RB5                                  *
+'* MCLR FUNCTION: INPUT PIN                                     *
+'* STACK OVERFLOW/ UNDERFLOW RESET: DISABLED                    *
+'* LOW VOLTAGE PROGRAMMING: DISABLED                            *
+'* ENHANCED CPU: DISABLED                                       *
+'* BOOT BLOCK: NOT PROTECTED                                    *                                                               
+'* EVERYTHING ELSE: NOT PROTECTED                               *
+'****************************************************************
+
+include "MODEDEFS.BAS"
+define OSC 32        
+   
+OSCCON = %11101000		'USE CRYSTAL OSCILLATOR AT 8 MHZ
+OSCCON2 = %10000000		'ENABLE 4xPLL
+OSCTUNE = %01000000		'ENABLE 4xPLL FOR INTOSC
+INTCON = %00000000      'DISABLE ALL INTERRUPTS, ENABLED LATER IN COLLECT_DATA SUBROUTINE
+WPUB = %00000000        'DISABLE PULLUPS ON PORTB
+ANSELA = %00000000      'SET ALL A PORTS TO DIGITAL
+ANSELB = %00000000      'SET ALL B PORTS TO DIGITAL
+ANSELC = %00000000      'SET ALL C PORTS TO DIGITAL
+TRISE = %00000001       'DISABLE PULLUPS ON PORTE
+
+'DISPLAY CONSTANTS
+HOME		       CON        1			'CURSOR HOME
+NOCURS             CON        4          'TURNS CURSOR OFF
+CLRLCD		       CON       12			'CLEAR SCREEN, USE FOR 4x40
+LITEON		       CON       14			'TURN ON BACKLIGHT - 4x40 ONLY
+LITEOFF			   CON       15			'TURN OFF BACKLIGHT - 4x40 ONLY
+POSCMD			   CON       16			'POSITION CURSOR
+
+'LINE1              CON       64         'Position of Line #1 Cursor in a 4x40 display   SerOut LCD_RF,N9600,[POSCMD,64]
+'LINE2              CON       104        'Position of Line #2 Cursor in a 4x40 display   SerOut LCD_RF,N9600,[POSCMD,64+40]
+'LINE3              CON       144        'Position of Line #3 Cursor in a 4x40 display   SerOut LCD_RF,N9600,[POSCMD,64+80]
+'LINE4              CON       184        'Position of Line #4 Cursor in a 4x40 display   SerOut LCD_RF,N9600,[POSCMD,64=120]
+
+LINE1              CON       64          'Position of Line #1 Cursor in a 4x20 display   SerOut LCD_RF,N9600,[POSCMD,64]
+LINE2              CON       84          'Position of Line #2 Cursor in a 4x20 display   SerOut LCD_RF,N9600,[POSCMD,64+20]
+LINE3              CON       104         'Position of Line #3 Cursor in a 4x20 display   SerOut LCD_RF,N9600,[POSCMD,64+40]
+LINE4              CON       124         'Position of Line #4 Cursor in a 4x20 display   SerOut LCD_RF,N9600,[POSCMD,64+60]
+
+DATA_OUT_BYPASS    CON        1          'IF DATA_OUT_BYPASS=1 THEN Bypass All DSP commands; IF DATA_OUT_BYPASS=0 THEN execute all DSP commands
+                                         '...The bypass is necessary to keep the DSP (PORTB.7) from interfering with the communications
+
+'Set Pin Aliases                        'QFN-28 Package
+BLUE_LED            var     PORTA.0     'Pin 27
+RED_LED             var     PORTA.1     'Pin 28
+PWR_ON              VAR     PORTA.2     'Pin 1          NEW
+ADO                 VAR     PORTA.3     'Pin 2
+'                           PORTA.4     'Pin 3          Not Assigned
+RCVR_D0             VAR     PORTA.5     'Pin 4          NEW
+GRN_LED             var     PORTC.0     'Pin 8
+FLASH_CS            var     PORTC.1     'Pin 9         (CS on schematic)
+RCVR_D1             VAR     PORTC.2     'Pin 10         NEW
+SCK                 var     PORTC.3     'Pin 11
+SDO                 var     PORTC.4     'Pin 12
+SDI                 var     PORTC.5     'Pin 13
+RCVR_VT             VAR     PORTC.6     'Pin 14         NEW
+UART_TX             var     PORTC.7     'Pin 15        (RX1/DT1 at U1, then D+ after 100 ohm resistor on schematic) 
+UART_RX             var     PORTB.0     'Pin 18        (TX1 at U1, then D- after 100 ohm resistor on schematic)
+SCL                 var     PORTB.1     'Pin 19
+SDA                 var     PORTB.2     'Pin 20
+INT_9250            VAR     PORTB.3     'Pin 21        (INT on schematic)
+VBATT_MON           VAR     PORTB.4     'Pin 22         REASSIGNED (was PB2)
+PB                  VAR     PORTB.5     'Pin 23
+'                           PORTB.6     'Pin 24        (CLK at U1, then D- after 100 ohm resistor on schematic)
+'                           PORTB.7     'Pin 25        (DATA at U1, then D+ after 100 ohm resistor on schematic)
+
+SW_ON               VAR     WORD
+SW_OFF              VAR     WORD
+SWITCH_PRESSES      VAR     WORD
+
+
+INIT:    
+'Initialize Inputs
+    INPUT RCVR_D0
+    INPUT RCVR_D1
+    input SDO                         'SLAVE DATA OUT (MISO)
+    INPUT RCVR_VT
+    INPUT UART_TX                     'PIC'S UART TX PIN (CONNECTS TO PC'S RX PIN); must be configured as INPUT when not in use
+    INPUT UART_RX                     'PIC'S UART rX PIN (CONNECTS TO PC'S tX PIN); must be configured as INPUT when not in use
+    INput SCL                         'I2C CLOCK (CONFIGURED AS INPUTS AS REQUIRED BY HARDWARE I2C)
+    INput SDA                         'I2C DATA  (CONFIGURED AS INPUTS AS REQUIRED BY HARDWARE I2C)
+    INPUT INT_9250                    'Interrupt from the 9250; unused at this time (Does this INT require a pull-up R?)
+    INPUT VBATT_MON            
+    input PB                          'Pushbutton S3 (Black PB; Right-Angle mount next to USB)
+
+    
+'Initialize Outputs
+    output BLUE_LED
+    output RED_LED
+    OUTPUT PWR_ON
+    output GRN_LED
+    OUTPUT ADO                       'MPU ADDRESS SELECT PIN (MUST PULL LOW FOR I2C TO WORK WITH CURRENT SLAVE ADDRESS!!!!!)
+    output FLASH_CS                  'FLASH CHIP SELECT
+    output SCK                       'SPI CLOCK
+    output SDI                       'SLAVE DATA IN (MOSI)
+
+PRESET_OUTPUTS:
+    BLUE_LED = 0
+    RED_LED = 0
+    PWR_ON = 0
+    GRN_LED = 0
+    ADO = 0
+    FLASH_CS = 0
+    SCK = 0
+    SDI = 0
+
+'PRESET SWITCH TIMING
+    SW_ON = 100
+    SW_OFF = 300
+
+    PAUSE 500:RED_LED = 1:PAUSE 1000:RED_LED = 0    
+    SerOut ADO, N9600, [CLRLCD]:PAUSE 10:SerOut ADO,N9600,[CLRLCD,LITEON]   'This line is the same as GOSUB CLR; it always allows the program name & date to be displayed
+    serout ADO, N9600, [POSCMD,LINE1,"MPU-5x"]                              'PRINT PROGRAM NAME ON LINE 1, 2, & 3
+    serout ADO, N9600, [POSCMD,LINE2,"Receiver TOGGLE"]
+    serout ADO, N9600, [POSCMD,LINE3,"Mode-1"]
+    serout ADO, N9600, [POSCMD,LINE4,"3/23/2018     (elc)"]                 'PRINT DATE OF LAST PROGRAM EDIT ON LINE 4
+    SCK = 0
+
+DOZE_UNTIL_PB_PRESSED:
+    GRN_LED = 0
+    IF PB == 1 then WAKE_UP
+    NAP 0
+    GOTO DOZE_UNTIL_PB_PRESSED
+    
+WAKE_UP:
+    GRN_LED = 1
+    SerOut ADO, N9600, [CLRLCD]:PAUSE 10
+    serout ADO, N9600, [POSCMD,LINE1,"Press PB to PROGRAM"]
+    SCK = 0
+    PAUSE 1000
+
+DOZE_UNTIL_PB_PRESSED1:
+    IF PB == 1 then ERASE_MEMORY
+    NAP 0
+    GOTO DOZE_UNTIL_PB_PRESSED1
+
+ERASE_MEMORY:
+    GRN_LED = 0
+    RED_LED = 1
+    SerOut ADO, N9600, [CLRLCD]:PAUSE 10
+    serout ADO, N9600, [POSCMD,LINE1,"PROGRAMMING Receiver"]
+    SCK = 0
+    FOR SWITCH_PRESSES=1 to 2
+        OUTPUT RCVR_VT
+        RCVR_VT = 1
+        PAUSE SW_ON
+        INPUT RCVR_VT
+        PAUSE SW_OFF
+        NEXT SWITCH_PRESSES
+
+ERASE_COMPLETE:
+    RED_LED = 0
+    BLUE_LED = 1
+    SerOut ADO, N9600, [CLRLCD]:PAUSE 10
+    serout ADO, N9600, [POSCMD,LINE1,"Waiting for XMTR"]
+    SCK = 0
+    PAUSE 5000
+    GRN_LED = 0
+    RED_LED = 0
+    BLUE_LED = 0
+    SerOut ADO, N9600, [CLRLCD]:PAUSE 10
+    serout ADO, N9600, [POSCMD,LINE1,"Test XMTR & RCVR"]
+
+VERIFY_XMTR_WORKS:
+    IF RCVR_D0 = 0 THEN
+        RED_LED = 1
+        GRN_LED = 0
+        ELSE
+        RED_LED = 0
+        GRN_LED = 1
+        ENDIF
+    GOTO VERIFY_XMTR_WORKS    
+    
+    
+
+STOP

@@ -1,0 +1,103 @@
+
+	NOLIST
+; PICBASIC PRO(TM) Compiler 3.1.1.4, (c) 1997, 2018 ME Labs, Inc. All Rights Reserved. 
+
+LABEL?L macro Label
+        RST?RP
+    ifdef PM_USED
+        LALL
+Label
+        XALL
+    else
+Label
+    endif
+    endm
+
+MOD?CCB macro Cin1, Cin2, Bout
+        MOVE?CB (Cin1) % (Cin2), Bout
+    endm
+
+CMPF?CL macro Cin, Label
+    if ((Cin) == 0)
+        L?GOTO  Label
+    endif
+    endm
+
+DISABLE? macro
+    endm
+
+ENABLE? macro
+    endm
+
+GOSUB?L macro Label
+    local dlabel
+    ifdef DEBUG_STACK
+        CHK?RP  DEBUG_STACK
+      ifdef DEBUG_STACK_ADDR
+        bcf     STATUS, C
+        rlcf    DEBUG_STACK, W
+        addlw   DEBUG_STACK_ADDR
+        movwf   FSR0L
+        clrf    FSR0H
+        movlw   low (dlabel)
+        movwf   POSTINC0
+        movlw   high (dlabel)
+        movwf   INDF0
+      endif
+        incf    DEBUG_STACK, F
+    endif
+        L?CALL  Label
+dlabel
+    endm
+
+GOTO?L macro Label
+        L?GOTO  Label
+    endm
+
+ICALL?L macro Label
+        L?CALL  Label
+    endm
+
+ONINT?LL macro Inthand, Intchk
+    local label
+        bsf     INTCON, GIE
+        bra     label
+Intchk  btfsc   INTCON, GIE
+        return
+        L?GOTO  Inthand
+label
+    endm
+ONINT_USED = 1
+
+OUTPUT?T macro Regin, Bitin
+        MOVE?CT 0, ((Regin) + 12h), Bitin
+    endm
+
+PAUSE?C macro Cin
+    if (((Cin) >> 8) == 0)
+        MOVE?CA Cin
+        L?CALL  PAUSE
+    else
+        MOVE?CB (Cin) >> 8, R1 + 1
+        MOVE?CA low (Cin)
+        L?CALL  PAUSEL
+    endif
+    endm
+PAUSE_USED = 1
+
+RESUME? macro
+        RST?RP
+        retfie
+    endm
+
+RETURN? macro
+    ifdef DEBUG_STACK
+        CHK?RP  DEBUG_STACK
+        decf    DEBUG_STACK, F
+    endif
+        RST?RP
+        return
+    endm
+
+
+	LIST

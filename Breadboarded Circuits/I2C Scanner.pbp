@@ -1,0 +1,112 @@
+'****************************************************************
+'*  Name    : I2C Scanner.BAS                                   *
+'*  Author  : Andrew D. McEntee                                 *
+'*  Notice  : Copyright (c) 2016 Andrew D. McEntee              *
+'*          : All Rights Reserved                               *
+'*  Date    : 9/28/2016                                         *
+'*  Version : 1.0                                               *
+'*  Notes   :                                                   *
+'*          :                                                   *
+'****************************************************************
+include "MODEDEFS.BAS"
+define OSC 8
+OPTION_REG =%00000000     'Disable all PORTA pullups, set prescaler for WDT to 1:1
+INTCON = %00000000        'Disable all interrupts
+PIE1 = %00000000          'Disable other Interrupts
+PIR1 = %00000000          'Reset all flags
+OSCCON = %01110111        '8MHz, set sytem to run on HFINTOSC
+ANSEL = %00100000         
+TRISA = %00000000         'Set all Port A pins to output
+TRISC = %00000000         'Set all Port C pins to output
+WPUA = %00000000
+IOCA = %00000000          'Disable PORT A interrupt on change
+CMCON0 = %00000111        'Disable Comparator
+ADCON0 = %00000000        'Disable A/D
+
+ 
+
+LED				    var 	PORTC.2     'Pin 8 
+SDA					var		PORTA.5		'Pin 2
+SCL					var		PORTA.4		'Pin 3
+'SCL        		 var     PORTC.4   	'Pin 6
+'SDA         		 var     PORTC.3   	'Pin 7
+DSP					var		PORTA.0		'Pin 13
+
+I					var		byte
+COUNTER 			VAR     byte
+I2C_ADDR			var		byte
+VALID				var		word
+
+output LED
+output SCL
+output SDA
+output DSP
+
+gosub INIT_LCD
+gosub clr
+gosub Line1
+gosub blink_cur
+counter = 0
+serout dsp,T9600,["I2C Scanner"]
+pause 2000
+gosub CRLF
+input SDA: input SCL
+main:
+	gosub init_blink
+	for I2C_ADDR = 0 to 254 step 2
+		Valid = I2C_ADDR
+		i2cwrite SDA,SCL,I2C_ADDR,[0],Not_found
+		NEXT_ADDR:
+		if Valid < 1000 then
+			counter = counter + 1
+			if COUNTER = 5 THEN
+				gosub Line2
+				endif
+			serout dsp,T9600,[#I2C_ADDR," "]
+			gosub CRLF
+			endif
+		next I2C_addr
+	if COUNTER = 0 then
+		serout dsp,T9600,["No Device Found"]
+		endif
+	end
+'**********************************************************************************		
+NOT_FOUND:
+	VALID = 1000
+	goto NEXt_ADDR
+	return
+'**********************************************************************************			
+'LCD model for these subroutines is "SerLCD v2.5" by LinkSprite (5v Vdd)    
+INIT_LCD:
+	gosub CLR:pause 25: gosub CLR
+	return
+CLR:
+    serout DSP,T9600,[$FE,$01]      'Clear LCD and move cursor to home
+    pause 10
+    return
+LINE1:
+    serout DSP,T9600,[$FE,$80]      'Move cursor to Line 1
+    return    
+LINE2:
+    serout DSP,T9600,[$FE,$C0]      'Move cursor to Line 2
+    return
+BLINK_CUR:
+    serout DSP,T9600,[$FE,$0D]      'Show blinking cursor
+    return
+DIS_CUR:
+    serout DSP,T9600,[$FE,$0C]      'Hide blinking cursor
+    return	 	
+'**********************************************************************************			
+'LCD model for these subroutines is "SerLCD v2.5" by LinkSprite (5v Vdd)    
+CRLF:
+   serout DSP,T9600,[10,13]      'Show blinking cursor
+   return  	
+'****************LED SUBROUTINES***************************************************
+INIT_BLINK:
+	for I = 0 to 1
+			LED = 1
+			pause 100
+			LED = 0
+			pause 100
+			next I 
+	return

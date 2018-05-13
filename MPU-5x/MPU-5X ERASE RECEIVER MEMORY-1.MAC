@@ -1,0 +1,109 @@
+
+	NOLIST
+; PICBASIC PRO(TM) Compiler 3.1.1.4, (c) 1997, 2018 ME Labs, Inc. All Rights Reserved. 
+
+LABEL?L macro Label
+        RST?RP
+    ifdef PM_USED
+        LALL
+Label
+        XALL
+    else
+Label
+    endif
+    endm
+
+CMPEQ?TCL macro Regin, Bitin, Cin, Label
+    if (((Cin) == 0) | ((Cin) == 1))
+        CLRWDT?
+        BIT?GOTO Cin, Regin, Bitin, Label
+    endif
+    endm
+
+CMPGT?WCL macro Win, Cin, Label
+    if ((Cin) < 0)
+        L?GOTO  Label
+    else
+      if ((Cin) < 0ffffh)
+        MOVE?WW Win, R0
+        MOVE?CB (Cin) >> 8, R1 + 1
+        MOVE?CA low (Cin)
+        L?CALL  CMPGT
+        BIT?GOTO 0, STATUS, Z, Label
+      endif
+    endif
+    endm
+CMPGT_USED = 1
+
+GOTO?L macro Label
+        L?GOTO  Label
+    endm
+
+INPUT?T macro Regin, Bitin
+        MOVE?CT 1, ((Regin) + 12h), Bitin
+    endm
+
+NAP?C macro Cin
+	sleep
+    endm
+
+NEXT?WCL macro Win, Cin, Label
+    if ((Cin) == 1)
+        CHK?RP  Win
+        incf    Win, F
+    else  
+        movlw   low (Cin)
+        CHK?RP  Win
+        addwf   Win, F
+    endif
+        movlw   (Cin) >> 8
+        addwfc  (Win) + 1, F
+    if ((Cin) <= 65535)
+        BIT?GOTO 0, STATUS, C, Label
+    endif
+    endm
+
+OUTPUT?T macro Regin, Bitin
+        MOVE?CT 0, ((Regin) + 12h), Bitin
+    endm
+
+PAUSE?C macro Cin
+    if (((Cin) >> 8) == 0)
+        MOVE?CA Cin
+        L?CALL  PAUSE
+    else
+        MOVE?CB (Cin) >> 8, R1 + 1
+        MOVE?CA low (Cin)
+        L?CALL  PAUSEL
+    endif
+    endm
+PAUSE_USED = 1
+
+PAUSE?W macro Win
+        MOVE?WWA Win, R1
+        L?CALL  PAUSEL
+    endm
+PAUSE_USED = 1
+
+SERMODE?C macro Cin
+        MOVE?CB Cin, GOP
+    endm
+
+SERPIN?T macro Regin, Bitin
+        BIT?R1  Regin, Bitin
+    endm
+
+SEROUT?C macro Cin
+        movlw   Cin
+        L?CALL  SEROUT
+    endm
+SEROUT_USED = 1
+
+STOP? macro
+    local loop
+loop    CLRWDT?
+        L?GOTO  loop
+    endm
+
+
+	LIST
