@@ -1,0 +1,2338 @@
+'****************************************************************
+'*  Name    : MPU-5x (ADM) HANDSHAKE REV-A.PBP                  *
+'*  Author  : Eric L. Canfield                                  *
+'*  Notice  : Copyright (c) 2018 nth Solutions LLC.             *
+'*          : All Rights Reserved                               *
+'*  Date    : 5/13/2018                                         *
+'*  Version : 1.0                                               *
+'*  Notes   :                                                   *
+'*          :                                                   *
+'*          :                                                   *
+'*************** MPU-5x (ADM) CAL REV-E (3 Sec On) NOTES *************************************************************************************************************************
+'*  1) Added conditionals that allow for a stop on release of the remote control button.                                                                                         *
+'*************** MPU-5x (ELC) CALIBRATION (No GRN LED) REV-D NOTES ***************************************************************************************************************
+'*  1) At ~ Line #1743, added IF/THEN statements to turn the RED_LED ON and OFF                                                                                                  *
+'*  2) Data Collection Method:  Seconds 0 to 2 (LED OFF); then alternates LED "ON" for 60 seconds and OFF for 60 seconds (3 intervals ON, 2 intervals OFF)                       *
+'*  3) Once remote initiates test, duration should exceed 5 minutes 10 seconds (310 total seconds); this will guarantee that there are BLACK frames at the START & STOP          *
+'*************** MPU-5x (ELC) CALIBRATION (No GRN LED) REV-C NOTES ***************************************************************************************************************
+'*  Added the following code:                                                                                                                                                    *
+'*                                                                                                                                                                               *
+'*   ~Line 1734                                                                                                                                                                  *
+'*               IF SECOND_COUNTER = 3 THEN                                                                                                                                      *
+'*                    RED_LED = 1                                                                                                                                                *
+'*                    ENDIF                                                                                                                                                      *
+'*               IF SECOND_COUNTER = 303 THEN                                                                                                                                    *
+'*                   RED_LED = 0                                                                                                                                                 *
+'*                   ENDIF                                                                                                                                                        *
+'*                                                                                                                                                                               *
+'*  Note:  Turns the RED_LED "ON" after 2 seconds and "OFF" after 302 seconds                                                                                                    *
+'*                                                                                                                                                                               *
+'*************** MPU-5x Dev-14D NOTES ********************************************************************************************************************************************
+'*  1) Added the ability to abort "SEND DATA TO PC" during UART transmission when the data is suspected of being corrupted or invalid. The PB or RCVR_D1 (remote) will           *
+'*     disable the process and exit the subroutine, returning to MAIN                                                                                                            *
+'*  2) Changed the commenting section at the beginning of the program so that the lines extend out to approximately 132 characters for tabloid-size printing                     *
+'*                                                                                                                                                                               *
+'*************** MPU-5x Dev-14C NOTES ********************************************************************************************************************************************
+'*  1) This program is ONLY for when the RCVR is programmed for MOMENTARY operation; allows RCVR_D0 and D1 to be used                                                            *
+'*  2) RCVR_D0 starts and stops test, but is now MOMENTARY; this changed the End-of-Test from a level-shift to a momentary HIGH detection mode, OR'd with the SECOND_COUNTER     *
+'*  3) RCVR_D1 (Transmitter PB "B") is now used as an alternate to the PB (S3); press-and-hold the transmitter CLOSE to the module to simulate pressing-and-holding PB           *
+'*                                                                                                                                                                               *
+'*************** MPU-5x Dev-14B NOTES ********************************************************************************************************************************************
+'*  1) Added PWR-UP & POWER-DOWN Variables & Constants. When the module is on battery power, it shuts down when the MAIN_CYCLE_CNTR exceeds the INACTIVE_LIMIT constant (Q1 is   *
+'*     turned off)                                                                                                                                                               *
+'*  2) Added the "BEGIN POWER-UP SEQUENCE". Requires PB to be pressed for 1 second before RA2 PWR_ON goes HIGH to turn on Q1.                                                    *
+'*  3) No provision made yet for detecting when Vin is connected so that RA2 PWR_ON does not turn on Q1                                                                          *
+'*                                                                                                                                                                               *
+'*************** MPU-5x Dev-14A NOTES ********************************************************************************************************************************************
+'*  1) Integrated remote start capability to Dev-13A. This is a merge of Dev-13A and Dev-14.                                                                                     *
+'*                                                                                                                                                                               *
+'**************** Dev-13(MPU-5A-5B-5C-5D) Modifications **************************************************************************************************************************
+'*  1) Changed metadata protocol to store the start address of the sector directly after the last data point for a given test.                                                   *
+'*  2) Fixed several addressing bugs from previous revisions                                                                                                                     *
+'*  3) Fine tuned the interrupt thresholds                                                                                                                                       *
+'*                                                                                                                                                                               *
+'*************** Dev-12A(MPU-5A-5B-5C-5D) Modifications **************************************************************************************************************************
+'*  1) Allowed user to both bulk and sector erase.                                                                                                                               *
+'*                                                                                                                                                                               *
+'*************** Dev-12 (MPU-5A-5B-5C-5D) Modifications **************************************************************************************************************************
+'*  1) Changed erase sequence to use sector erase instead of bulk erase to speed up testing                                                                                      *
+'*  2) Cleaned up unused code (refer back to Dev-11 if you want some snippets from old programs)                                                                                 *
+'*                                                                                                                                                                               *
+'*************** Dev-11 (MPU-3A-3B-3C-3D) Modifications **************************************************************************************************************************
+'*  1) Remove debug lines                                                                                                                                                        *
+'*  2) Remove SPI and I2C initialization on for more accurate sample rates.                                                                                                      *
+'*                                                                                                                                                                               *
+'*************** Dev-10 (MPU-3A-3B-3C-3D) Modifications **************************************************************************************************************************
+'*  1) Fixed flash addressing for data integrety                                                                                                                                 *
+'*  2) Changed hardcoded delay in BULK_ERASE to routine that samples the "write in progress" bit of the 127s status register every second to find when the erase finishes.       *
+'*                                                                                                                                                                               *
+'*************** Dev-9 (MPU-3A-3B-3C-3D) Modifications ***************************************************************************************************************************
+'*  1) Added support for other sample rates. Now supports:                                                                                                                       *
+'*     1000-100 Hz   960-96 Hz   500-50 Hz   480-48 Hz   240-24 Hz   120-120 Hz    60-60 Hz                                                                                      *
+'*                                                                                                                                                                               *
+'*************** Dev-8 (MPU-3A-3B-3C-3D) Modifications ***************************************************************************************************************************
+'*  1) The sample period is interrupt based. The period for the sample rate is determined by the TMR0_TICK_THRESHOLD                                                             *
+'*  2) The delay for the bitbanged UART subroutines was tuned for more better data integrity and to allow for spaces and navigation commands to be sent via UART                 *
+'*  3) Failsafes were added to prevent accidental flash memory delinking by explicitely reseting navigational variables.                                                         *
+'*                                                                                                                                                                               *
+'*************** Dev-7 (MPU-3A-3B-3C-3D) Modifications ***************************************************************************************************************************
+'*  1) The DATA_OUT_BYPASS constant was inserted to disable the DSP (PORTB.7) data to the LCD when the module is connected to the TTL/CMOS Dongle and the JAVA dashboard. The DSP* 
+'*     commands tend to disrupt the communications with the dashboard.                                                                                                           *
+'*  2) On initial power up, the RED LED flashes briefly and then goes to sleep (NAP) until PB is pressed to "wake up" module.                                                    *
+'*  3) Once the module "wakes up", the GRN/BLU/RED LED sequence time has been substantially shortened, after which the GRN LED illuminates and the module is waiting for PB input*
+'*                                                                                                                                                                               *
+'*************** Dev-5 & 6 (MPU-3A-3B-3C-3D) Modifications ***********************************************************************************************************************
+'* The MPU-2 series used separate ports for programming and the import/export of module data to a Java program.  This version parallels the programming ports with the comm ports*
+'* with 100 ohm resistors in-line with each port (to prevent potential dead-shorts between the paralleled ports).                                                                *
+'*                                                                                                                                                                               *
+'* In order for both sets of ports to operate without interfering, they must always be set as INPUTS (high impedance), except during their called operations.                    *
+'* Paralleled Ports:                                                                                                                                                             *
+'*       RB6/PGC (N/A) || RB0 (UART_RX)                                                                                                                                          *
+'*       RB7/PGD (DSP) || RC7 (UART_TX)                                                                                                                                          *
+'********************PROGRAM DESCRIPTION******************************************************************************************************************************************
+'* THIS PROGRAM IS DESIGNED TO COLLECT ACCEL, GYRO, AND MAG DATA FROM AN MPU-9250 VIA I2C AND STORE IT IN THE S25FL127S FLASH MEMORY IC BASED UPON USER SPECIFIED PARAMETERS. THE*
+'* ADJUSTABLE PARAMETERS INCLUDE TEST DURATION(S), ACCEL/ GYRO SAMPLE RATE(HZ), MAG SAMPLE RATE(HZ), ACCEL SENSITIVITY(G'S) GYRO SENSITIVITY(DPS),ACCEL FILTER BANDWIDTH(HZ), AND* 
+'* GYRO FILTER BANDWIDTH(HZ). THESE PARAMETERS ARE RECEIVED FROM THE JAVA PROGRAM THAT ACCOMPANIES THIS PROGRAM AND THEY ARE STORED IN THE PIC'S EEPROM SO THE TEST PARAMETERS   *
+'* DONT RESET WHEN POWER IS DISCONNECTED.                                                                                                                                        *
+'*                                                                                                                                                                               *
+'* NOTE: THE EEPROM IS ERASED WHEN THE PIC IS PROGRAMMED SO THE TEST PARAMETERS ARE RESTORED TO DEFAULTS UNTIL THE USER CHANGES THE SETTINGS WITH THE JAVA PROGRAM.              *
+'*                                                                                                                                                                               *
+'* A PUSH BUTTON IS MOUNTED ON THE URICCHIO MODULE TO INITIATE SEVERAL FUNCTIONS. THE MENU IS DESCRIBED BELOW.                                                                   *
+'* MOMENTARY CLICK: RUN A TEST                                                                                                                                                   *
+'* HOLD FOR 2-4 SEC (RELEASED WHILE BLUE LED IS ON): EXPORT DATA                                                                                                                 *
+'* HOLD FOR 4-6 SEC (RELEASED WHILE RED LED IS ON): BULK ERASE                                                                                                                   *
+'* HOLD FOR 6-8 SEC (RELEASED WHILE GREEN AND BLUE LED ARE ON):                                                                                                                  *
+'* LISTEN FOR NEW TEST PARAMETERS ON UART BUS                                                                                                                                    *
+'**************CHANGES FROM PREVIOUS REVISION*************************************************************************************************************************************
+'* PREVIOUS REVISION: PBP URICCHIO MODULE TEST DEV-4                                                                                                                             *
+'* 1. HARDWARE SPI AND I2C USED RATHER THAN SOFTWARE.                                                                                                                            *
+'* 2. TEST PARAMETERS ARE TAKEN IN FROM THE JAVA PROGRAM.                                                                                                                        *
+'* 3. TEST PARAMETERS ARE EXPORTED BEFORE DATA SO JAVA PROGAM KNOWS WHICH PARAMETERS WERE USED FOR THE TESTS.                                                                    *
+'*                                                                                                                                                                               *
+'******************FLASH MEMORY STRUCTURE*****************************************************************************************************************************************
+'* METADATA SECTOR ADDRESSES: 0-504                                                                                                                                              *
+'* VALID TESTING DATA ADDRESSES: 512 - 4,294,967,295                                                                                                                             *
+'* TEST DATA BYTES SAVED PER SECTOR: 504                                                                                                                                         *
+'* WHEN TESTING DATA IS BEING COLLECTED, THE PROGRAM WILL SAVE DATA IN THE FIRST 504 BYTES OF EACH SECTOR. ONCE THE 504TH BYTE IS SAVED, THE PROGRAM MOVES TO THE NEXT SECTOR    *
+'* BECAUSE THE FLASH MEMORY CHIP WILL WRAP AROUND AND OVERWRITE THE BEGINNING OF THE CURRENT SECTOR WHEN BLOCK WRITING OTHERWISE.                                                *
+'*                                                                                                                                                                               *
+'*********************************************************************************************************************************************************************************
+'****************COMMUNICATION PROTOCOLS*************************
+'* MPU-9250: I2C (HARDWARE)                                     *
+'* S25FL127S FLASH MEMORY: SPI (HARDWARE)                       *
+'* PC: UART (BIT BANGED                                         *
+'****************************************************************
+'***************PROGRAMMER CONFIGURATIONS************************
+'* OSCILLATOR: HS (MEDIUM POWER)                                *
+'* PLL: ENABLED                                                 *
+'* PRIMARY CLOCK: ENABLED                                       *
+'* FAILSAFE CLOCK MONITOR: DISABLED                             *
+'* INTERNAL EXTERNAL SWITCHOVER: DISABLED                       *
+'* POWER UP TIMER: ENABLED                                      *
+'* BROWN OUT RESET: DISABLED                                    *
+'* BROWN OUT RESET VOLTAGE: 1.9V                                *
+'* WATCHDOG TIMER: ENABLED                                      *
+'* WATCHDOG TIMER POSTSCALER: 1:1 (See Side Note to Right)      * WATCHDOG TIMER POSTSCALER Note: May need to adjust for NAP responses to be correct with 32 mhz clock
+'* CCP2 MULTIPLEXED WITH: RC1                                   *
+'* PORTB RESET STATE: DIGITAL I/O                               *
+'* CCP3 MULTIPLEXED WITH: RB5                                   *
+'* HFINTOSC FAST START: NOT DELAYED                             *
+'* T3CKI MULTIPLEXED WITH: RC0                                  *
+'* CCP2 B MULTPLEXED WITH: RB5                                  *
+'* MCLR FUNCTION: INPUT PIN                                     *
+'* STACK OVERFLOW/ UNDERFLOW RESET: DISABLED                    *
+'* LOW VOLTAGE PROGRAMMING: DISABLED                            *
+'* ENHANCED CPU: DISABLED                                       *
+'* BOOT BLOCK: NOT PROTECTED                                    *                                                               
+'* EVERYTHING ELSE: NOT PROTECTED                               *
+'*********************************************************************************************************************************************************************************
+
+include "MODEDEFS.BAS"
+define OSC 32        
+'****************TMR0 VARIABLES AND CONSTANTS***************************************************************************
+'THE FOLLOWING CONSTANTS DETEMINE THE TIMING FOR THE SAMPLE RATE OF THE ACCEL/GYRO AND MAG
+'THEY WERE CALCULATED ASSUMING 8MHZ SOURCES WITH PRESCALER OF 2 (250nS/tick) AND 312 WAS
+'SUBTRACTED FROM THE THEORETICAL TO ACCOUNT FOR NAVIGATION INSTRUCTIONS (EXPERIMENTALLY DETERMINED)
+'FROM THERE, EACH VALUE WAS FINELY TUNED USING A LOGIC ANALYZER. THE SUBTRACTION OF 312 IS ONLY VALID 
+'FOR A PRESCALER OF 2 ON A 8MHZ CLOCK 
+'*Note About Non-SMPTE Rates:  When using 500 or 1000sps, consideration must be given about how best to "sync" the sps with the fps; this has not yet been determined
+'*
+'**NOTE: THE PRESCALER IS DEPENDENT ON THE SAMPLE RATE SO MAKE SURE YOU ARE DOING CALCULATIONS WITH THE CORRECT PRESCALER.
+'        
+'                            (CALC - 312)    PRESCALER VAL   nS/TICK     SMPTE RATE            ms/FRAME        CALCULATED TMRO
+TMR0_THRESH_1000_100    con     3688           '    2          250nS      (See Note Above About Non-SMPTE Synched Rates)  
+TMR0_THRESH_960_96      con     3859           '    2          250nS      Base = 29.97 @ 30fps  0.00104270937    4171 (4170.83748)
+TMR0_THRESH_500_50      con     7688           '    2          250nS      (See Note Above About Non-SMPTE Synched Rates) 
+TMR0_THRESH_480_48      con     8030           '    2          250nS      Base = 29.97 @ 30fps  0.00208541875    8342 (8341.675)
+TMR0_THRESH_240_24      con     16371          '    2          250nS      Base = 29.97 @ 30fps  0.00417083748   16683 (16683.35)
+TMR0_THRESH_120_120     con     33055          '    2          250nS      Base = 29.97 @ 30fps  0.008341675     33367 (33366.7)
+TMR0_THRESH_60_60       con     33173          '    4          500nS      Base = 29.97 @ 30fps  0.01668334992   33367 (33366.7) NOTE: Original empirical # of 33173 used for now)
+
+TMR0_TICK_THRESHOLD     var     word        'THIS IS THE VARIABLE USED TO WHEN DETEMININING WHEN TO SAMPLE DATA 
+                                            '!!ASSUME PRESCALER OF 2 WITH 8MHZ SOURCE  SO PRECISION IS 250nS
+T0CON_CONFIG_DATA       VAR     BYTE        'THIS VARIABLE STORES THE VALUE THAT WILL BE WRITTEN TO THE T0CON
+                                            'REGISTER TO SET THE APPROPRIATE PRESCALER AND INTERRUPT CONFIGURATIONS
+'***********************************************************************************************************************
+   
+OSCCON = %11101000		'USE CRYSTAL OSCILLATOR AT 8 MHZ
+OSCCON2 = %10000000		'ENABLE 4xPLL
+OSCTUNE = %01000000		'ENABLE 4xPLL FOR INTOSC
+INTCON = %00000000      'DISABLE ALL INTERRUPTS, ENABLED LATER IN COLLECT_DATA SUBROUTINE
+WPUB = %00000000        'DISABLE PULLUPS ON PORTB
+ANSELA = %00000000      'SET ALL A PORTS TO DIGITAL
+ANSELB = %00000000      'SET ALL B PORTS TO DIGITAL
+ANSELC = %00000000      'SET ALL C PORTS TO DIGITAL
+TRISE = %00000001       'DISABLE PULLUPS ON PORTE
+
+'DISPLAY CONSTANTS
+HOME		       CON        1			'CURSOR HOME
+NOCURS             CON        4          'TURNS CURSOR OFF
+CLRLCD		       CON       12			'CLEAR SCREEN, USE FOR 4x40
+LITEON		       CON       14			'TURN ON BACKLIGHT - 4x40 ONLY
+LITEOFF			   CON       15			'TURN OFF BACKLIGHT - 4x40 ONLY
+POSCMD			   CON       16			'POSITION CURSOR
+
+'LINE1              CON       64         'Position of Line #1 Cursor in a 4x40 display   SerOut LCD_RF,N9600,[POSCMD,64]
+'LINE2              CON       104        'Position of Line #2 Cursor in a 4x40 display   SerOut LCD_RF,N9600,[POSCMD,64+40]
+'LINE3              CON       144        'Position of Line #3 Cursor in a 4x40 display   SerOut LCD_RF,N9600,[POSCMD,64+80]
+'LINE4              CON       184        'Position of Line #4 Cursor in a 4x40 display   SerOut LCD_RF,N9600,[POSCMD,64=120]
+
+LINE1              CON       64          'Position of Line #1 Cursor in a 4x20 display   SerOut LCD_RF,N9600,[POSCMD,64]
+LINE2              CON       84          'Position of Line #2 Cursor in a 4x20 display   SerOut LCD_RF,N9600,[POSCMD,64+20]
+LINE3              CON       104         'Position of Line #3 Cursor in a 4x20 display   SerOut LCD_RF,N9600,[POSCMD,64+40]
+LINE4              CON       124         'Position of Line #4 Cursor in a 4x20 display   SerOut LCD_RF,N9600,[POSCMD,64+60]
+
+DATA_OUT_BYPASS    CON        1          'IF DATA_OUT_BYPASS=1 THEN Bypass All DSP commands; IF DATA_OUT_BYPASS=0 THEN execute all DSP commands
+                                         '...The bypass is necessary to keep the DSP (PORTB.7) from interfering with the communications
+
+UART_PERIOD_VAR_115200 	con		2        'DO NOT CHANGE, CRITICAL FOR UART
+
+'S25FL127S CONFIG DATA
+FLASH_STATUS_1_DATA   con %00000000              'DEFAULT STATUS 1 SETTINGS
+FLASH_CONFIG_DATA     con %00000000              'DEFAULT CONFIG REGISTER SETTINGS
+FLASH_STATUS_2_DATA   con %11000000              'SET RECEIVE BUFFER TO 512 BYTES    
+
+'MPU-9250 CONFIG DATA
+PWR_MGMT_1_DATA         con     %00000001               'USE INTERNAL 20MHZ OSCILLATOR AS CLOCK SOURCE FOR MPU-9250
+PWR_MGMT_2_DATA         con     %00000000               'ENABLE GYRO AND ACCEL IN ALL DIMENSIONS
+INT_PIN_CFG_DATA        CON     %00010010               'DISBALE INTERRUPTS
+INT_ENABLE_DATA         CON     %00000001               'DISABLE INTERRUPTS
+CNTL1_CONFIG_DATA       con     %00010001               '16 BIT RESOLUTION, SINGLE SHOT MODE (TAKES 10MS TO SAMPLE MINIMUM)               
+MPU_RESET_CMD           con     $80                     'SENT TO PWR_MGMT_1_ADDR TO RESET THE MPU-9250
+
+'TEST PARAMETER VARIABLES AND CONSTANTS
+TEST_PARAM_TIMEOUT      CON   10000                'DURATION (IN MS) BEFORE THE MODULE WILL STOP LOOKING FOR TEST PARAMETER DATA FROM THE PC
+START_LISTENER_TIMOUT   CON   1
+CONFIRM_TIMEOUT         CON   50
+
+'UART VARIABLES AND CONSTANTS
+TEST_PARAMS             VAR     WORD[12]                      'HOLDS ALL TEST PARAMETERS IN AN ARRAY SO IT CAN BE EASILY ITERATED OVER
+TEMP_RX_BUFFER          VAR     WORD
+RAW_RX_DATA             VAR     BYTE[28]                         'BYTE ARRAY THAT STORES TEST PARAMETERS SENT FROM THE PC 
+PARAM_COUNTER           var     BYTE
+ACKNOWLEDGE_BYTE        VAR     BYTE
+
+HEX_RETURN              VAR     BYTE                             'GLOBAL VARIABLE THAT STORES THE RESULT OF THE STRING TO HEX CONVERSION
+TX_DATA				    var		byte                             'VARIABLE THAT STORES WHAT WILL BE TRANSMITTED VIA UART
+TX_BYTE				    VAR		BYTE                             'VARIABLE THAT WILL BE CONVERTED TO HEX BEFORE TRANSMITTING VIA UART
+BIT_INDEX 			    var	    Byte                             'USED TO BIT BANG UART
+HEX_DIGIT_COUNTER	    VAR	    BYTE                             'USED TO CONVERT A BYTE TO HEX
+HEX_INDEX			    VAR	    BYTE                             'USED TO CONVERT A BYTE TO HEX
+
+TEMP_BYTE               var     BYTE                             'TEMPORARILY STORES A BYTE FOR DATA CONVERSION
+SERIAL_COUNTER          var     BYTE                             'USED TO NAVIGATE IN SERIAL DATA TRANSMISSION
+
+'TEST PARAMETERS
+NUM_PARAMS              CON     12
+TEST_DURATION           VAR     WORD                      'TEST DURATION
+ACCEL_GYRO_SAMPLE_RATE  VAR     WORD                      'ACCELEROMETER AND GYROSCOPE SAMPLE RATE (DO NOT CHANGE, NOT SUPPORTED IN THIS REVISION OF CODE)
+MAG_SAMPLE_RATE         VAR     WORD                      'MAGNETOMETER SAMPLE RATE (DO NOT CHANGE, NOT SUPPORTED IN THIS REV)
+ACCEL_SENSITIVITY       VAR     WORD                      'ACCELEROMETER SENSITIVITY (G'S) (ACCEPTABLE VALUES: 2, 4, 8, 16)--> DEFAULTS TO 8G IF INVALID NUMBER FOUND 
+GYRO_SENSITIVITY        VAR     WORD                      'GYROSCOPE SENSITIVITY (DPS) (ACCEPTABLE VALUES: 250, 500, 1000, 2000)--> DEFAULTS TO 500DPS IF INVALID NUMBER FOUND 
+ACCEL_FILTER            VAR     WORD                      'ACCELEROMETER FILTER BANDWIDTH (HZ) (ACCEPTABLE VALUES: 5,10,20,41,92,184,460,1130(OFF))--> DEFAULTS TO 99 IF INVALID NUMBER FOUND
+GYRO_FILTER             VAR     WORD                      'GYROSCOPE FILTER BANDWIDTH (HZ) (ACCEPTABLE VALUES: 5,10,20,41,92,184,250,3600,8800(OFF))--> DEFAULTS TO 92 IF INVALID NUMBER FOUND
+
+'DEFAULT ACCEL/GYRO SENSITIVITY AND FILTERS MUST BE CHANGED WITHIN "SET_ACCEL_SENS_VAR","SET_GYRO_SENS_VAR","SET_ACCEL_FILTER_VAR", AND "SET_GYRO_FILTER_VAR"
+SAMPLE_NUM              var   WORD                      'CALCULATED NUMBER OF SAMPLES THAT THE PROCCESOR WILL TAKE FROM THE MPU
+SECOND_COUNTER          VAR   WORD                      'TEST PARAMETER USED IN MAIN DATA COLLECTION FOR LOOP
+FLASH_READ_LENGTH       var   WORD                      'CALCULATED NUMBER OF SECTORS THAT WILL BE READ FROM THE FLASH MEMORY AND SENT TO THE PC
+DELAY_PERIOD_US         VAR   WORD                      'VARIABLE THAT HOLD CALCULATED DELAY PER SAMPLE TO MEET USER DEFINED SAMPLE RATE
+
+'THESE DEFAULTS WILL ONLY BE IMPLEMENTED AFTER THE MODULE IS FRESHLY PROGRAMMED OR THE PIC'S INTERNAL EEPROM IS ERASED/ CORRUPTED
+DEF_ACCEL_GYRO_SAMPLE_RATE   CON   240                  'DEFAULTS ACCEL AND GYRO SAMPLE RATE TO 120HZ
+DEF_MAG_SAMPLE_RATE          CON   240                  'DEFAULTS MAG SAMPLE RATE TO 50HZ
+DEF_TEST_DURATION            CON   5                    'DEFAULTS TEST DURATION TO 30 SECONDS
+DEF_ACCEL_SENSITIVITY        CON   16                   'DEFAULTS ACCEL SENSITIVITY TO 8G
+DEF_GYRO_SENSITIVITY         CON   2000                 'DEFAULTS GYRO SENSITIVITY TO 100DPS
+DEF_ACCEL_FILTER             CON   92                   'DEFAULTS ACCEL FILTER TO 92HZ
+DEF_GYRO_FILTER              CON   92                   'DEFAULTS GYRO FILTER TO 92HZ
+
+'INCREMENTAL VARIABLES
+I                        var    WORD                             'INCREMENTAL VARIABLE FOR ITERATIVE "FOR" LOOP
+J                        var    WORD                             'INCREMENTAL VARIABLE FOR ITERATIVE "FOR" LOOP
+COUNTER                  var    WORD                             'INCREMENTAL VARIABLE FOR ITERATIVE "FOR" LOOP
+DATA_COUNTER             var    BYTE                             'INCREMENTAL VARIABLE FOR ITERATIVE "FOR" LOOP
+SET_COUNTER              var    BYTE                             'INCREMENTAL VARIABLE FOR ITERATIVE "FOR" LOOP
+SECTOR_COUNT             var    word                             'INCREMENTAL VARIABLE FOR ITERATIVE "FOR" LOOP
+LED_COUNTER              VAR    WORD                             'INCREMENTAL VARIABLE FOR LED SEQUENCES
+FLASH_READ_COUNTER       var    word                             'TRACKS HOW MANY SECTORS HAVE BEEN READ FROM FLASH
+READ_COUNTER             var    WORD                             'USED FOR FLASH READ NAVIGATION
+TEST_COUNTER             var    WORD                             'USED TO IDENTIFY TEST START ADDRESSES IN SERIAL DATA TRANSMISSION
+TEST_TX_COUNTER          VAR    WORD                             'USED TO TRACK HOW MANY TESTS HAVE BEEN TRANSMITTED
+INTERRUPT_COUNTER        VAR    WORD                             'USED TO TRACK THE CORRECT DELAY PERIOD FOR DATA SAMPLING
+
+'DATA STORAGE VARIABLES (MPU-9250)
+RAW_ACCEL_XOUT          var     WORD                'TEMPORARILY STORES RAW A/D VALUE READ FROM MPU-9250 ACCELEROMETER
+RAW_ACCEL_YOUT          var     WORD                'TEMPORARILY STORES RAW A/D VALUE READ FROM MPU-9250 ACCELEROMETER
+RAW_ACCEL_ZOUT          var     WORD                'TEMPORARILY STORES RAW A/D VALUE READ FROM MPU-9250 ACCELEROMETER
+RAW_GYRO_XOUT           var     WORD                'TEMPORARILY STORES RAW A/D VALUE READ FROM MPU-9250 GYROSCOPE
+RAW_GYRO_YOUT           var     WORD                'TEMPORARILY STORES RAW A/D VALUE READ FROM MPU-9250 GYROSCOPE
+RAW_GYRO_ZOUT           var     WORD                'TEMPORARILY STORES RAW A/D VALUE READ FROM MPU-9250 GYROSCOPE
+RAW_MAG_XOUT            var     WORD                'TEMPORARILY STORES RAW A/D VALUE READ FROM MPU-9250 MAGNETOMETER
+RAW_MAG_YOUT            var     WORD                'TEMPORARILY STORES RAW A/D VALUE READ FROM MPU-9250 MAGNETOMETER
+RAW_MAG_ZOUT            var     WORD                'TEMPORARILY STORES RAW A/D VALUE READ FROM MPU-9250 MAGNETOMETER
+GEN_CONFIG_DATA         VAR     BYTE                'STORES THE ACTUAL VALUE THAT WILL BE SENT TO THE GEN_CONFIG REGISTER
+GYRO_CONFIG_DATA        VAR     BYTE                'STORES THE ACTUAL VALUE THAT WILL BE SENT TO THE GYRO_CONFIG REGISTER
+ACCEL_CONFIG_DATA       VAR     BYTE                'STORES THE ACTUAL VALUE THAT WILL BE SENT TO THE ACCEL_CONFIG REGISTER
+ACCEL_CONFIG_2_DATA     VAR     BYTE                'STORES THE ACTUAL VALUE THAT WILL BE SENT TO THE ACCEL_CONFIG_2 REGISTER
+
+'MPU6500 SLAVE ADDRESS			
+MPU_ADDR_W    con     $D0                                   'WRITE ADDRESS OF THE MPU-9250
+MPU_ADDR_R    con     $D1                                   'READ ADDRESS OF THE MPU-9250
+MAG_ADDR_W    con     $18                                   'WRITE ADDRESS OF THE AK8963 MAG
+MAG_ADDR_R    con     $19                                   'READ ADDRESS OF THE AK8963 MAG
+'MPU9250 REGISTER ADDRESSES
+MAG_XOUT_L_ADDR       con $03                              'SEE MPU-9250 REGISTER MAP FOR MORE INFO:
+                                                                 '\\ELEANOR\DOCUMENTS\_URICCHIO PROJECT\MPU-9250 DOCUMENTATION - "MPU-9250 REGISTER MAP - NA - INVENSENSE - JAN 2015"
+MAG_XOUT_H_ADDR       con $04
+MAG_YOUT_L_ADDR       con $05
+MAG_YOUT_H_ADDR       con $06
+MAG_ZOUT_L_ADDR       con $07
+MAG_ZOUT_H_ADDR       con $08
+CNTL1_ADDR            con $0A
+CNTL2_ADDR            con $0B
+XACCEL_FACT_ST        con $0D
+YACCEL_FACT_ST        con $0E
+ZACCEL_FACT_ST        con $0F
+SMPLRT_DIV_ADDR       con $19
+GEN_CONFIG_ADDR       con $1A
+GYRO_CONFIG_ADDR      con $1B
+ACCEL_CONFIG_ADDR     con $1C
+ACCEL_CONFIG_2_ADDR   con $1D
+I2C_MSTR_ADDR         con $24
+INT_PIN_CFG_ADDR      con $37
+INT_ENABLE_ADDR       con $38
+INT_STATUS_ADDR       con $3A
+ACCEL_XOUT_H_ADDR     con $3B
+ACCEL_XOUT_L_ADDR     con $3C
+ACCEL_YOUT_H_ADDR     con $3D
+ACCEL_YOUT_L_ADDR     con $3E
+ACCEL_ZOUT_H_ADDR     con $3F
+ACCEL_ZOUT_L_ADDR     con $40
+TEMP_OUT_H_ADDR       con $41
+TEMP_OUT_L_ADDR       con $42
+GYRO_XOUT_H_ADDR      con $43
+GYRO_XOUT_L_ADDR      con $44
+GYRO_YOUT_H_ADDR      con $45
+GYRO_YOUT_L_ADDR      con $46
+GYRO_ZOUT_H_ADDR      con $47
+GYRO_ZOUT_L_ADDR      con $48
+USER_CONTROL_ADDR     con $6A
+PWR_MGMT_1_ADDR       con $6B
+PWR_MGMT_2_ADDR       con $6C
+XA_OFFS_H_ADDR        con $77
+XA_OFFS_L_ADDR        con $78
+YA_OFFS_H_ADDR        con $79
+YA_OFFS_L_ADDR        con $80
+ZA_OFFS_H_ADDR        con $81
+ZA_OFFS_L_ADDR        con $82
+
+'DATA STORAGE VARIABLES (S25FL127S)
+STATUS_REG_DATA         var     BYTE                             'STORES STATUS REGISTER DATA FOR TIMING PURPOSES
+BYTES_LEFT_IN_SECTOR    var     WORD                             'DETERMINES HOW MUCH TO INCREMENT THE WRITE_ADDR TO MOVE TO THE NEXT SECTOR
+READ_BUFFER_1           var     BYTE[252]                        'STORES A BUFFER OF FLASH MEMORY DATA
+READ_BUFFER_2           var     BYTE[252]                        'STORES A BUFFER OF FLASH MEMORY DATA
+META_BUFFER_1           var     BYTE[252]                        'STORES A BUFFER OF FLASH MEMORY META DATA
+META_BUFFER_2           var     BYTE[252]                        'STORES A BUFFER OF FLASH MEMORY META DATA
+DEVICE_ID               VAR     BYTE                             'STORES DEVICE ID (USED AS HELLO WORLD IF USER SUSPECTS SPI OR COMMUNICATION MAY BE FAULTY)
+MANUF_ID                VAR     BYTE                             'STORES DEVICE ID (USED AS HELLO WORLD IF USER SUSPECTS SPI OR COMMUNICATION MAY BE FAULTY)
+NUM_OF_TESTS            VAR     BYTE                             'TRACKS HOW MANY TESTS ARE STORED IN THE FLASH
+INIT_FLAG               VAR     BIT
+INT_EN_FLAG             VAR     BIT
+REMOTE_FLAG             VAR     BIT
+TEMP_REMOTE_FLAG        VAR     BIT
+
+'FLASH ADDRESS VARIABLES                                                                            
+WRITE_ADDR_H        VAR WORD                           'HIGH WORD OF FLASH WRITE ADDRESS
+WRITE_ADDR_L        VAR WORD                           'LOW WORD OF FLASH WRITE ADDRESS
+TEMP_WRITE_ADDR_H   VAR WORD                           'TEMPORARY HIGH WORD OF FLASH WRITE ADDRESS
+TEMP_WRITE_ADDR_L   VAR WORD                           'TEMPERARY LOW WORD OF FLASH WRITE ADDRESS
+END_WRITE_ADDR_H    VAR WORD                           'HIGH WORD THAT MARKS END OF TEST WHEN EXPORTING DATA 
+END_WRITE_ADDR_L    VAR WORD                           'LOW WORD THAT MARKS END OF TEST WHEN EXPORTING DATA 
+READ_ADDR_H         var word                           'HIGH WORD OF FLASH READ ADDRESS
+READ_ADDR_L         var word                           'LOW WORD OF FLASH READ ADDRESS
+META_ADDR           var word                           'LOW WORD OF FLASH META ADDRESS (META SECTOR SPANS FROM 0 TO 503 SO NO HIGH WORD NEEDED (HARDCODED 0 IN ROUTINE))
+ERASE_SECTOR_COUNT  VAR WORD                           'STORES NUMBER OF SECTORS TO ERASE
+
+'S25FL127S REGISTERS
+STATUS_REGISTER_1_ADDR con $05                       'ADDRESS FOR THE S25FL127S'S STATUS REGISTER
+STATUS_REGISTER_2_ADDR con $07                       'ADDRESS FOR THE S25FL127S'S STATUS REGISTER
+
+'S25FL127S COMMANDS
+WRITE_REG              con $01                       'WRITE FLASH REGISTER COMMAND
+READ_4B_ADDR_CMD       con $13                       'READ COMMAND FOR A 4 BYTE ADDRESS
+PP_4B_ADDR_CMD         con $12                       'PAGE PROGRAM COMMAND FOR A 4 BYTE ADDRESS
+BULK_ERASE_CMD         con $60                       'BULK ERASE COMMAND
+SECTOR_ERASE_CMD       con $D8                       'SECTOR ERASE COMMAND
+WRITE_ENABLE_CMD       con $06                       'WRITE ENABLE COMMAND
+
+'I2C VARIABLES
+I2C_SLAVE_W_ADDR        VAR     BYTE                                         'GLOBAL VARIABLE TO BE SET WHEN USING THE I2C_WRITE SUBROUTINE
+I2C_REG_ADDR            VAR     BYTE                                         'GLOBAL VARIABLE TO BE SET WHEN USING THE I2C_WRITE SUBROUTINE
+I2C_DATA                VAR     BYTE                                         'GLOBAL VARIABLE TO BE SET WHEN USING THE I2C_WRITE SUBROUTINE
+
+
+
+'POWER-UP & POWER_DOWN Variables & Constants
+MAIN_CYCLE_CNTR         VAR     WORD                'Counts the number of loops through MAIN; Used to determine user inactivity so module can be shutdown
+INACTIVE_LIMIT          CON     5000                'Number of loops through MAIN required to turn PWR_ON off (LOW); IF set = 5000, delay is ~20 seconds
+
+
+'Set Pin Aliases                        'QFN-28 Package
+ADO                 VAR     PORTA.3     'Pin 2
+GRN_LED             var     PORTC.0     'Pin 8
+FLASH_CS            var     PORTC.1     'Pin 9
+SCK                 var     PORTC.3     'Pin 11
+SDO                 var     PORTC.4     'Pin 12
+SDI                 var     PORTC.5     'Pin 13
+UART_TX             var     PORTC.7     'Pin 15
+UART_RX             var     PORTB.0     'Pin 18
+SCL                 var     PORTB.1     'Pin 19
+SDA                 var     PORTB.2     'Pin 20
+INT_9250            VAR     PORTB.3     'Pin 21
+'                   VAR     PORTB.4     'Pin 22
+PB                  VAR     PORTB.5     'Pin 23
+'PGC                 VAR     PORTB.6     'Pin 24
+DSP                 var     PORTB.7     'Pin 25
+BLUE_LED            var     PORTA.0     'Pin 27
+RED_LED             var     PORTA.1     'Pin 28
+
+'ELC ADDED THESE PORT ASSIGNMENTS
+PWR_ON              VAR     PORTA.2     'Pin 1
+RCVR_D0             VAR     PORTA.5     'Pin 4
+RCVR_D1             var     PORTC.2     'Pin 10
+RCVR_VT             VAR     PORTC.6     'Pin 14
+VBATT_MON           VAR     PORTB.4     'Pin 22
+
+INIT_FLAG = 0
+INT_EN_FLAG = 0  
+REMOTE_FLAG = 0             
+disable
+gosub DISABLE_TMR0
+INIT:    
+    
+    'Initialize Inputs
+    input SDO                         'SLAVE DATA OUT (MISO)
+    input PB                          'Pushbutton S3 (Black PB; Right-Angle mount next to USB)
+    INPUT VBATT_MON                   '(ELC)
+    INput SCL                         'I2C CLOCK (CONFIGURED AS INPUTS AS REQUIRED BY HARDWARE I2C)
+    INput SDA                         'I2C DATA  (CONFIGURED AS INPUTS AS REQUIRED BY HARDWARE I2C)
+    INPUT UART_RX                     'PIC'S UART rX PIN (CONNECTS TO PC'S tX PIN); must be configured as INPUT when not in use
+    INPUT DSP                         'LCD DATA; must be configured as INPUT when not in use
+    INPUT UART_TX                     'PIC'S UART TX PIN (CONNECTS TO PC'S RX PIN); must be configured as INPUT when not in use
+'    INPUT PGC                         'Set the PGC (PIC Programming Clock Port) as an INPUT
+    INPUT INT_9250                    'Interrupt from the 9250; unused at this time (Does this INT require a pull-up R?)
+'ELC Added These Inputs
+    INPUT RCVR_D0
+    INPUT RCVR_D1
+    INPUT RCVR_VT
+    INPUT VBATT_MON
+   
+    'Initialize Outputs
+    output GRN_LED
+    output BLUE_LED
+    output RED_LED
+    output FLASH_CS                  'FLASH CHIP SELECT
+    output SCK                       'SPI CLOCK
+    output SDI                       'SLAVE DATA IN (MOSI)
+    OUTPUT ADO                       'MPU ADDRESS SELECT PIN (MUST PULL LOW FOR I2C TO WORK WITH CURRENT SLAVE ADDRESS!!!!!)
+    OUTPUT PWR_ON
+
+'BEGIN POWER-UP SEQUENCE - If Vin or AUX_PWR is used, Module powers up automatically; If S3 (PB) is used, Module powers up when PWR_ON goes HIGH
+    GRN_LED = 0:BLUE_LED = 0:RED_LED = 0  'Ensure LED's are OFF when module powers up
+    PWR_ON = 0                       'Initially ensure that PWR_ON is LOW
+    PAUSE 1000                       'When battery powered and PB enables PWR_ON, this delay forces user to press PB for 1 second before power-up
+    HIGH PWR_ON                      'Force Q1 into conduction; provides battery power to VREG_IN (see schematic)
+    RED_LED = 1:PAUSE 1000:RED_LED = 0
+    OUTPUT DSP:SerOut DSP,N9600,[CLRLCD]:PAUSE 10                   'This line is the same as GOSUB CLR; it always allows the program name & date to be displayed
+    serout DSP, N9600, [LITEON,POSCMD,LINE1,"MPU-5x (ADM)"]         'PRINT PROGRAM NAME ON LINE 1
+    serout DSP, N9600, [POSCMD,LINE2,"CAL REV-D"]
+    serout DSP, N9600, [POSCMD,LINE3,"(3 Sec ON)"]
+    serout DSP, N9600, [POSCMD,LINE4,"5/13/2018"]                   'PRINT DATE OF LAST PROGRAM EDIT ON LINE 2
+    INPUT DSP
+
+
+
+
+WAKE_UP:
+    MAIN_CYCLE_CNTR = 0
+    PAUSE 250                        'PAUSE 1 second before illumating LED's
+    GRN_LED = 1:PAUSE 300:GRN_LED=0  'Power-Up GRN_LED
+    PAUSEUS 10                       'PAUSE TO PREVENT ANOMALIES
+    BLUE_LED = 1:PAUSE 300:BLUE_LED=0'Power-Up BLUE_LED
+    PAUSEUS 10                       'PAUSE TO PREVENT ANOMALIES
+    RED_LED = 1:PAUSE 300:RED_LED=0  'Power-Up RED_LED
+    PAUSEUS 10                       'PAUSE TO PREVENT ANOMALIES
+    GRN_LED = 1                      'Turn ON GRN_LED
+    PAUSEUS 10                       'PAUSE TO PREVENT ANOMALIES
+    FLASH_CS = 1                     'INITIALIZE FLASH CS HIGH
+    PAUSEUS 1                        'PAUSE TO PREVENT ANOMALIES
+    SCK = 1                          'INITIALIZE SPI CLOCK HIGH
+    PAUSEUS 1                        'PAUSE TO PREVENT ANOMALIES
+    SDI = 0                          'INITIALIZE SLAVE DATA IN (MOSI) LOW
+    PAUSEUS 1                        'PAUSE TO PREVENT ANOMALIES
+    SCL = 1                          'INITIALIZE I2C CLOCK HIGH
+    PAUSEUS 1                        'PAUSE TO PREVENT ANOMALIES
+    SDA = 1                          'INITIALIZE I2C CLOCK HIGH
+    PAUSEUS 1                        'PAUSE TO PREVENT ANOMALIES
+    ADO = 0                          'INITIALIZE MPU-9250 ADDRESS SELECT PIN LOW (MUST PULL LOW FOR I2C TO WORK WITH CURRENT SLAVE ADDRESS!!!!!) 
+    
+    gosub INIT_FLASH                                       'INITIALIZE FLASH MEMORY CONFIGURATIONS (1 SECOND PAUSE BUILT IN TO SUBROUTINE TO ALLOW FLASH TO INITIALIZE, WITHOUT IT, INIT_NAVIG_VARS WILL NOT WORK!!!)
+    GOSUB INIT_I2C                                         'INITIALIZE HARDWARE I2C REGISTERS (MSSP2 BUS)
+    GOSUB INIT_SPI                                         'INITIALIZE HARDWARE SPI REGISTERS (MSSP1 BUS)
+'gosub CALIBRATE_UART
+'GOSUB PRINT_METADATA                                   'READ AND PRINT THE METADATA SECTOR TO PUTTY (DEBUG)
+'GOSUB UART_CRLF
+'GOSUB CLR                                                  'CLEAR THE DISPLAY SO INIT_NAVIG_VARS CAN PRINT (DEBUG)
+    GOSUB INIT_NAVIG_VARS                                  'INITIALIZE PROGRAM ADDRESSING VARIABLES (META_ADDR, WRITE_ADDR, ETC.)
+
+    'GOSUB GET_TEST_PARAMS                                  'READ TEST PARAMETERS FROM PIC'S EEPROM AND STORE IT IN RESPECTIVE VARIABLES
+    PAUSE 10                                               'PAUSE FOR LCD READIBILITY
+    GOSUB CLR                                              'CLEAR THE LCD
+    INIT_FLAG = 1
+    gosub INIT_MPU                  'INITIALIZE MPU WITH TEST CONFIGURATION SETTINGS (SENSITIVITY AND FILTERS) 
+MAIN:	
+    MAIN_CYCLE_CNTR=MAIN_CYCLE_CNTR+1
+    GRN_LED = 0                                           'TURN ON THE GREEN LED (STANDBY MODE)  
+    IF DATA_OUT_BYPASS == 1 THEN BYPASS1
+    OUTPUT DSP
+    serout DSP, N9600, [POSCMD,LINE1,"STANDBY"]           'NOTIFY THE USER THAT THE MODULE IS IN STANDBY MODE
+    INPUT DSP
+BYPASS1:
+    IF RCVR_D0 == 1 THEN
+        GOSUB PROCESS_RCVR_D0
+        REMOTE_FLAG = 1
+	    gosub COLLECT_DATA                            'COLLECT DATA FROM THE MPU AND STORE IT IN THE FLASH
+	    GOTO WAKE_UP
+    endif
+    
+    input UART_RX
+    OUTPUT UART_TX
+    
+    serin2 UART_RX, 6, [WAIT("11111"), STR RAW_RX_DATA\1]          '01234E = E 
+                                                                             
+    IF RAW_RX_DATA[0] = "E" THEN        'EXPORT DATA
+        GRN_LED = 0
+        RED_LED = 0
+        BLUE_LED = 1
+        SEROUT2 UART_TX, 6, [RAW_RX_DATA[0]]
+        GOSUB SEND_DATA_TO_PC           'BEGIN TEST DATA TRANSFER TO PC
+        BLUE_LED = 0
+        GOTO WAKE_UP                    'GO BACK TO PB AND SERIAL LISTERNER LOOP
+    ELSEIF RAW_RX_DATA[0] = "S" THEN    'SAVE TEST NEW TEST PARAMETERS    
+        RED_LED = 0                               
+        GRN_LED = 1                               
+        BLUE_LED = 1                              
+        SEROUT2 UART_TX, 6, [RAW_RX_DATA[0]]
+        GOSUB SAVE_TEST_PARAMS                    
+        GOTO INIT                               
+    else                                'UNKNOWN COMMAND
+        SEROUT2 UART_TX, 6, ["?"] 
+        GOSUB COMM_ERROR_BLINK      
+    ENDIF
+    
+START_LISTENER_TIMEOUT_LABEL:
+
+    IF PB == 1 OR RCVR_D1 = 1 then                        'EXECUTES IF THE PUSH BUTTON IS PRESSED
+        GRN_LED = 0                                       'TURN OFF THE GREEN LED TO NOTIFY THE USER THAT THE PUSH BUTTON PRESS WAS ACKNOWLEDGED
+        IF DATA_OUT_BYPASS == 1 THEN BYPASS2
+        OUTPUT DSP
+        serout DSP, N9600, [POSCMD,LINE1,"RUN TEST?"]     'NOTIFY THE USER - RELEASING THE PB WILL START THE TEST
+        INPUT DSP        
+BYPASS2:
+        pause 2000                                        'WAIT 2 SECONDS
+        if PB == 1 OR RCVR_D1 = 1 then                                   'EXECUTES IF THE PUSH BUTTON IS STILL BEING HELD AFTER 2 SECONDS 
+            BLUE_LED = 1                                  'TURN ON THE BLUE LED NOTIFYING THE USER THAT THE MENU IS CURRENTLY POINTING TOWARDS THE DATA TRANSMISSION OPTION
+            IF DATA_OUT_BYPASS == 1 THEN BYPASS3
+            OUTPUT DSP
+            serout DSP, N9600, [POSCMD,LINE1,"SEND DATA TO PC?"] 'NOTIFY THE USER - RELEASING THE PB WILL SEND DATA TO THE PC
+            INPUT DSP        
+BYPASS3:
+            pause 2000                                    'WAIT 2 SECONDS
+            if PB == 1 OR RCVR_D1 = 1 then                               'EXECUTES IF THE PUSH BUTTON IS STILL BEING HELD AFTER AN ADDITIONAL 2 SECONDS 
+                PAUSEUS 1                                    'PAUSE TO ENSURE THE RED_LED TURNS ON
+                RED_LED = 1                                  'TURN ON THE BLUE LED NOTIFYING THE USER THAT THE MENU IS CURRENTLY POINTING TOWARDS THE DATA TRANSMISSION OPTION
+                PAUSEUS 1                                    'PAUSE TO ENSURE THE BLUE TURNS OFF
+                BLUE_LED = 0                                 'TURN THE BLUE LED OFF
+                IF DATA_OUT_BYPASS == 1 THEN BYPASS4
+                OUTPUT DSP
+                serout DSP, N9600, [POSCMD,LINE1,"ERASE?             "] 'NOTIFY THE USER - RELEASING THE PB WILL BULK ERASE EEPROM
+                INPUT DSP
+BYPASS4:
+                pause 2000                                    'WAIT 2 SECONDS
+                if PB == 1 OR RCVR_D1 = 1 then                               'EXECUTES IF THE PUSH BUTTON IS STILL BEING HELD AFTER AN ADDITIONAL 2 SECONDS
+                    RED_LED = 0                               'TURN THE RED LED OFF 
+                    GRN_LED = 1                               'TURN THE GREEN LED ON 
+                    BLUE_LED = 1                              'TURN THE BLUE LED ON 
+                    GOSUB SAVE_TEST_PARAMS                    'START LISTENING FOR TEST PARAMETERS FROM THE PC (UART) AND SAVE THEM IN THE EEPROM (TIMEOUT BUILT IN)
+                    GOTO INIT                                 'REINITIALIZE THE MODULE
+                ELSE                                          'EXECUTES IF THE BUTTON WAS RELEASED WHILE THE RED LED WAS ILLUMINATED
+                    RED_LED = 1                               'TURN ON THE RED LED AND GREEN LEDS TO NOTIFY THE USER THAT THE MODULE IS EXECUTING A BULK ERASE
+                    GRN_LED = 1                               '^^^
+                    BLUE_LED = 0                              'TURN OFF THE BLUE LED
+                    IF DATA_OUT_BYPASS == 0 THEN
+                        GOSUB CLR                                 'CLEAR THE DISPLAY
+                        OUTPUT DSP
+                        serout DSP, N9600, [POSCMD,LINE1,"SECTOR ERASE?         "]  'PRINT TO THE LCD TO NOTIFY THE USER THAT THE MODULE IS EXECUTING AN ERASE
+                        INPUT DSP
+                        ENDIF 
+                    while PB == 1 OR RCVR_D1 = 1 
+                    wend
+                    GRN_LED = 0
+                    for I = 0 to 12                           'TOTAL DELAY LENGTH OF 3 SECONDS
+                        IF PB == 1 OR RCVR_D1 = 1 THEN                       'IF THE PB IS PRESSED, BULK ERASE AND NAVIGATE TO THE END OF THIS MENU (BYPASS 5)
+                            IF DATA_OUT_BYPASS == 0 THEN
+                                GOSUB CLR                                 'CLEAR THE DISPLAY
+                                OUTPUT DSP
+                                serout DSP, N9600, [POSCMD,LINE1,"BULK ERASING?       "]  'PRINT TO THE LCD TO NOTIFY THE USER THAT THE MODULE IS EXECUTING AN ERASE
+                                INPUT DSP
+                                ENDIF 
+                            GRN_LED = 1
+                            RED_LED = 1
+                           ' OUTPUT UART_TX
+                           ' TX_DATA = 66                              'PRINT AN S FOR SECTOR ERASE TO PUTTY (DEBUG)
+                           ' GOSUB UART_TX_VAR_115200                      
+                           ' INPUT UART_TX
+                            GOSUB BULK_ERASE
+                            GOTO BYPASS5
+                        ENDIF
+                        RED_LED = 1
+                        PAUSE 125
+                        RED_LED = 0
+                        BLUE_LED = 1
+                        PAUSE 125
+                        BLUE_LED = 0
+                        NEXT I
+                    
+                    'IF THE PB WAS NOT PRESSED, SECTOR ERASE    
+                    GRN_LED = 1
+                    RED_LED = 1
+                   ' OUTPUT UART_TX
+                   ' TX_DATA = 83                              'PRINT AN S FOR SECTOR ERASE TO PUTTY (DEBUG)
+                   ' GOSUB UART_TX_VAR_115200                      
+                   ' INPUT UART_TX
+                    gosub SECTOR_ERASE                        'SECTOR ERASE THE FLASH
+BYPASS5:
+                    RED_LED = 0                               'TURN OFF THE RED LED
+                    goto WAKE_UP                              'REINITIALIZE MODULE
+                ENDIF
+            else                                          'EXECUTES IF THE BUTTON WAS RELEASED WHILE THE BLUE LED WAS ILLUMINATED
+                GRN_LED = 0                               'TURN OFF THE GREEN (STANDBY) LED
+                BLUE_LED = 1                              'TURN ON THE BLUE LED TO NOTIFY THE USER THAT A DATA TRANSFER IS OCCURING
+                IF DATA_OUT_BYPASS == 1 THEN BYPASS6
+                GOSUB CLR                                 'CLEAR THE LCD
+                OUTPUT DSP
+                serout DSP, N9600, [POSCMD,LINE1,"SENDING DATA TO PC  "] 'PRINT TO THE LCD TO NOTIFY THE USER THAT THE MODULE IS EXECUTING A DATA TRANSFER
+                INPUT DSP
+BYPASS6:
+                gosub SEND_DATA_TO_PC                     'TRANSFER DATA VIA UART TO PC
+                GOSUB CLR                                 'CLEAR THE LCD
+                BLUE_LED = 0                              'TURN OFF THE BLUE LED TO NOTIFY THE USER THAT THE DATA TRANSFER IS COMPLETE
+                GOTO WAKE_UP                              'REINITIALIZE MODULE
+            endif
+        else                                              'EXECUTES IF THE BUTTON WAS RELEASED WHILE THE NONE OF THE LEDS WERE ON
+            IF DATA_OUT_BYPASS == 1 THEN BYPASS7
+                GOSUB CLR                                     'CLEAR THE LCD
+                OUTPUT DSP
+                serout DSP, N9600, [POSCMD,LINE1,"RUNNING TEST        "]  'PRINT TO THE LCD TO NOTIFY THE USER THAT THE MODULE IS COLLECTING DATA
+                INPUT DSP      
+BYPASS7:
+                gosub COLLECT_DATA                            'COLLECT DATA FROM THE MPU AND STORE IT IN THE FLASH
+                GOSUB CLR                                     'CLEAR THE LCD
+                GOSUB CLR                                     'CLEAR THE LCD
+                GOTO WAKE_UP
+            endif
+        endif                                                 'LOOP
+    NAP 0
+    IF MAIN_CYCLE_CNTR=INACTIVE_LIMIT THEN LOW PWR_ON
+    goto MAIN
+    
+
+'****************MPU9250 SUBROUTINES***********************************************
+INIT_I2C:                  'SETS NECESSARY REGISTERS FOR HARDWARE I2C
+    INPUT SDA              'SDA MUST ME A DIGITAL INPUT FOR HARDWARE I2C TO WORK
+    INPUT SCL              'SCL MUST ME A DIGITAL INPUT FOR HARDWARE I2C TO WORK
+    SSP2STAT = %00010000   'HIGH SPEED SLEW RATE, CLEAR FLAGS
+    SSP2CON1 = %00101000   'ENABLE MSSP MODULE, CONFIGURE AS I2C MASTER
+    SSP2CON2 = %00000000   'CLEAR FLAGS
+    SSP2CON3 = %00000000   'CLEAR FLAGS
+    SSP2ADD = %00010001    'SET SCL FREQUENCY TO 400KHZ 
+    GOSUB I2C_START        'ISSUE START COMMAND (ANOMALY)
+    gosub I2C_STOP         'ISSUE STOP COMMAND  (ANOMALY)
+RETURN                     
+I2C_START:                 'ISSUES START COMMAND ON I2C BUS
+    SSP2CON2.0 = 1         'SET BIT TO ISSUE START COMMAND
+    while SSP2CON2.0 == 1  'LOOP UNTIL THE START IS ISSUED AND THE MSSP MODULE AUTOMATICALLY CLEARS THE BIT
+    wend 
+return
+I2C_STOP:                 'ISSUES STOP COMMAND ON I2C BUS
+    SSP2CON2.2 = 1        'SET BIT TO ISSUE STOP COMMAND
+    while SSP2CON2.2 == 1 'LOOP UNTIL THE STOP IS ISSUED AND THE MSSP MODULE AUTOMATICALLY CLEARS THE BIT
+    wend 
+return
+
+I2C_WRITE_1B:                    'SUBROUTINE THAT WILL WRITE 1 BYTE OF DATA TO A PASSED IN SLAVE ADDRESS AND REGISTER ADDRESS
+    GOSUB I2C_START              'ISSUE START COMMAND ON I2C BUS
+    SSP2BUF = I2C_SLAVE_W_ADDR   'SEND THE PASSED IN I2C SLAVE WRITE ADDRESS ON THE I2C BUS
+    while SSP2STAT.0 == 1        'LOOP UNTIL THE DATA IS SENT
+    WEND
+    PAUSEUS 2                    'PAUSE TO ENSURE DATA IS FULLY SENT (ANOMALY)
+    SSP2BUF = I2C_REG_ADDR       'SEND THE PASSED IN REGISTER ADDRESS ON THE I2C BUS
+    while SSP2STAT.0 == 1        'LOOP UNTIL THE DATA IS SENT
+    WEND
+    PAUSEUS 2                    'PAUSE TO ENSURE DATA IS FULLY SENT (ANOMALY)
+    SSP2BUF = I2C_DATA           'SEND THE PASSED IN DATA ON THE I2C BUS
+    PAUSEUS 1                    'PAUSE TO ENSURE DATA TRANSMISSION FLAG IS SET (ANOMALY)
+    while SSP2STAT.0 == 1        'LOOP UNTIL THE DATA IS SENT
+    WEND                         
+    PAUSEUS 2                    'PAUSE TO ENSURE DATA IS FULLY SENT (ANOMALY)
+    GOSUB I2C_STOP               'ISSUE STOP COMMAND ON I2C BUS
+RETURN  
+
+INIT_MPU:                                     'INITIALIZES PROGRAM VARIABLES AND MPU REGISTERS
+    GOSUB SET_ACCEL_SENS_VAR                  'INITIALIZE VARIABLE FOR THE ACCELEROMETER SENSITIVITY BASED ON CONSTANTS AT THE TOP
+    GOSUB SET_GYRO_SENS_VAR                   'INITIALIZE VARIABLE FOR THE GYROSCOPE SENSITIVITY BASED ON CONSTANTS AT THE TOP
+    GOSUB SET_ACCEL_FILTER_VAR                'INITIALIZE VARIABLE FOR THE ACCELEROMETER FILTER BASED ON CONSTANTS AT THE TOP
+    GOSUB SET_GYRO_FILTER_VAR                 'INITIALIZE VARIABLE FOR THE GYROSCOPE FILTER BASED ON CONSTANTS AT THE TOP
+    
+    
+    'EACH BLOCK BELOW HAS THE SAME STRUCTURE WHICH IS WHY ONLY 1 IS COMMENTED. SEE CONSTANTS AT TOP FOR MORE INFO ON CONFIGURATIONS SETTINGS
+    'RESET MPU
+    I2C_SLAVE_W_ADDR = MPU_ADdr_W            'SET THE GLOBAL VARIABLE SO THE MPU WILL BE WRITTEN TO
+    I2C_REG_ADDR = Pwr_mgmt_1_ADDR           'SET THE GLOBAL VARIABLE SO THE PWR_MGMT_1 REGISTER WILL BE WRITTEN TO
+    I2C_DATA = MPU_RESET_CMD                 'SET THE GLOBAL VARIABLE TO SEND THE RESET COMMAND
+    GOSUB I2C_WRITE_1B                       'SEND THE I2C_SLAVE_W_ADDR, I2C_REG_ADDR, AND THE I2C_DATA ON THE I2C BUS
+    pause 100                                'PAUSE TO ALLOW FOR PROPER RESET
+    'PWR_MGMT_1
+    I2C_SLAVE_W_ADDR = MPU_ADdr_W
+    I2C_REG_ADDR = Pwr_mgmt_1_ADDR
+    I2C_DATA = PWR_MGMT_1_DATA
+    GOSUB I2C_WRITE_1B
+    'PWR_MGMT_2
+    I2C_SLAVE_W_ADDR = MPU_ADdr_W
+    I2C_REG_ADDR = Pwr_mgmt_2_ADDR
+    I2C_DATA = PWR_MGMT_2_DATA
+    GOSUB I2C_WRITE_1B
+    'GEN CONFIG
+    I2C_SLAVE_W_ADDR = MPU_ADdr_W
+    I2C_REG_ADDR = GEN_CONFIG_ADDR
+    I2C_DATA = GEN_CONFIG_DATA
+    GOSUB I2C_WRITE_1B
+    'GYRO CONFIG
+    I2C_SLAVE_W_ADDR = MPU_ADdr_W
+    I2C_REG_ADDR = gyro_config_addr
+    I2C_DATA = GYRO_CONFIG_DATA
+    GOSUB I2C_WRITE_1B
+    'ACCEL_CONFIG
+    I2C_SLAVE_W_ADDR = MPU_ADdr_W
+    I2C_REG_ADDR = ACCEL_CONFIG_ADDR 
+    I2C_DATA = ACCEL_CONFIG_DATA
+    GOSUB I2C_WRITE_1B
+    'ACCEL_CONFIG_2
+    I2C_SLAVE_W_ADDR = MPU_ADdr_W
+    I2C_REG_ADDR = accel_config_2_addr
+    I2C_DATA = ACCEL_CONFIG_2_DATA
+    GOSUB I2C_WRITE_1B
+    'INT_PIN_CONFIG
+    I2C_SLAVE_W_ADDR = MPU_ADdr_W
+    I2C_REG_ADDR = INT_PIN_CFG_ADDR
+    I2C_DATA = INT_PIN_CFG_DATA
+    GOSUB I2C_WRITE_1B
+    'INT_ENABLE
+    I2C_SLAVE_W_ADDR = MPU_ADdr_W
+    I2C_REG_ADDR = INT_ENABLE_ADDR
+    I2C_DATA = INT_ENABLE_DATA
+    GOSUB I2C_WRITE_1B
+    PAUSE 10
+    'TAKE NEW MAG READING
+    I2C_SLAVE_W_ADDR = MPU_ADdr_W
+    I2C_REG_ADDR = CNTL1_ADDR
+    I2C_DATA = CNTL1_CONFIG_DATA
+    GOSUB I2C_WRITE_1B
+return
+
+    
+SET_ACCEL_SENS_VAR:                                               'SET CONFIGURATION BITS TO MATCH THE ACCEL_SENSITIVITY CONSTANT
+    SELECT CASE ACCEL_SENSITIVITY                                 'SELECT THE CASE BASED ON THE VALUE OF ACCEL_SENSITIVITY
+        CASE 2                                                    '2G
+             ACCEL_CONFIG_DATA.4 = 0
+             ACCEL_CONFIG_DATA.3 = 0    
+        CASE 4                                                    '4G
+             ACCEL_CONFIG_DATA.4 = 0
+             ACCEL_CONFIG_DATA.3 = 1    
+        CASE 8                                                    '8G
+             ACCEL_CONFIG_DATA.4 = 1
+             ACCEL_CONFIG_DATA.3 = 0    
+        CASE 16                                                   '16G
+             ACCEL_CONFIG_DATA.4 = 1
+             ACCEL_CONFIG_DATA.3 = 1    
+        CASE ELSE                                                'EXECUTES IF THE USER DID NOT INPUT A VALID NUMBER (8G)
+             ACCEL_CONFIG_DATA.4 = 1
+             ACCEL_CONFIG_DATA.3 = 0  
+    END SELECT
+RETURN
+SET_GYRO_SENS_VAR:                                               'SET CONFIGURATION BITS TO MATCH THE GYRO_SENSITIVITY CONSTANT
+    SELECT CASE GYRO_SENSITIVITY                                 'SELECT THE CASE BASED ON THE VALUE OF GYRO_SENSITIVITY
+        CASE 250                                                 '250DPS
+             GYRO_CONFIG_DATA.4 = 0
+             GYRO_CONFIG_DATA.3 = 0    
+        CASE 500                                                 '500DPS
+             GYRO_CONFIG_DATA.4 = 0
+             GYRO_CONFIG_DATA.3 = 1    
+        CASE 1000                                                '1000DPS
+             GYRO_CONFIG_DATA.4 = 1
+             GYRO_CONFIG_DATA.3 = 0    
+        CASE 2000                                                '2000DPS
+             GYRO_CONFIG_DATA.4 = 1
+             GYRO_CONFIG_DATA.3 = 1    
+        CASE ELSE                                                'EXECUTES IF THE USER DID NOT INPUT A VALID NUMBER (500DPS)
+             GYRO_CONFIG_DATA.4 = 0
+             GYRO_CONFIG_DATA.3 = 1
+    END SELECT
+RETURN
+SET_ACCEL_FILTER_VAR:                                           'SET CONFIGURATION BITS TO MATCH THE ACCEL_FILTER CONSTANT
+    SELECT CASE ACCEL_FILTER                                    'SELECT THE CASE BASED ON THE VALUE OF ACCEL_FILTER
+        CASE 5                                                  '5 HZ
+             ACCEL_CONFIG_2_DATA.3 = 1
+             ACCEL_CONFIG_2_DATA.2 = 1
+             ACCEL_CONFIG_2_DATA.1 = 1 
+             ACCEL_CONFIG_2_DATA.0 = 0     
+        CASE 10                                                 '10 HZ
+             ACCEL_CONFIG_2_DATA.3 = 1
+             ACCEL_CONFIG_2_DATA.2 = 1
+             ACCEL_CONFIG_2_DATA.1 = 0 
+             ACCEL_CONFIG_2_DATA.0 = 1  
+        CASE 20                                                 '20 HZ
+             ACCEL_CONFIG_2_DATA.3 = 1
+             ACCEL_CONFIG_2_DATA.2 = 1
+             ACCEL_CONFIG_2_DATA.1 = 0 
+             ACCEL_CONFIG_2_DATA.0 = 0  
+        CASE 41                                                 '41 HZ
+             ACCEL_CONFIG_2_DATA.3 = 1
+             ACCEL_CONFIG_2_DATA.2 = 0
+             ACCEL_CONFIG_2_DATA.1 = 1 
+             ACCEL_CONFIG_2_DATA.0 = 1            
+        CASE 92                                                 '92 HZ
+             ACCEL_CONFIG_2_DATA.3 = 1
+             ACCEL_CONFIG_2_DATA.2 = 0
+             ACCEL_CONFIG_2_DATA.1 = 1 
+             ACCEL_CONFIG_2_DATA.0 = 0  
+        CASE 184                                                '184 HZ
+             ACCEL_CONFIG_2_DATA.3 = 1
+             ACCEL_CONFIG_2_DATA.2 = 0
+             ACCEL_CONFIG_2_DATA.1 = 0
+             ACCEL_CONFIG_2_DATA.0 = 1  
+        CASE 460                                                '460 HZ
+             ACCEL_CONFIG_2_DATA.3 = 1
+             ACCEL_CONFIG_2_DATA.2 = 0
+             ACCEL_CONFIG_2_DATA.1 = 0 
+             ACCEL_CONFIG_2_DATA.0 = 0  
+        CASE 1130                                              '1130 HZ
+             ACCEL_CONFIG_2_DATA.3 = 0
+             ACCEL_CONFIG_2_DATA.2 = 0
+             ACCEL_CONFIG_2_DATA.1 = 0 
+             ACCEL_CONFIG_2_DATA.0 = 0  
+        CASE ELSE                                                   'EXECUTES IF THE USER DID NOT INPUT A VALID NUMBER (92HZ)
+             ACCEL_CONFIG_2_DATA.3 = 1
+             ACCEL_CONFIG_2_DATA.2 = 0
+             ACCEL_CONFIG_2_DATA.1 = 1 
+             ACCEL_CONFIG_2_DATA.0 = 0   
+    END SELECT
+RETURN
+SET_GYRO_FILTER_VAR:                                                'SET CONFIGURATION BITS TO MATCH THE GYRO_FILTER CONSTANT
+    SELECT CASE GYRO_FILTER                                         'SELECT THE CASE BASED ON THE VALUE OF GYRO_FILTER
+        CASE 5                                                      '5 HZ
+             GYRO_CONFIG_DATA.1 = 1
+             GYRO_CONFIG_DATA.0 = 1 
+             GEN_CONFIG_DATA.2 = 1
+             GEN_CONFIG_DATA.1 = 1 
+             GEN_CONFIG_DATA.0 = 0                                  '10 HZ
+        CASE 10
+             GYRO_CONFIG_DATA.1 = 1
+             GYRO_CONFIG_DATA.0 = 1
+             GEN_CONFIG_DATA.2 = 1
+             GEN_CONFIG_DATA.1 = 0 
+             GEN_CONFIG_DATA.0 = 1  
+        CASE 20                                                     '20 HZ
+             GYRO_CONFIG_DATA.1 = 1
+             GYRO_CONFIG_DATA.0 = 1
+             GEN_CONFIG_DATA.2 = 1
+             GEN_CONFIG_DATA.1 = 0 
+             GEN_CONFIG_DATA.0 = 0  
+        CASE 41                                                     '41 HZ
+             GYRO_CONFIG_DATA.1 = 1
+             GYRO_CONFIG_DATA.0 = 1
+             GEN_CONFIG_DATA.2 = 0
+             GEN_CONFIG_DATA.1 = 1 
+             GEN_CONFIG_DATA.0 = 1            
+        CASE 92                                                     '92 HZ
+             GYRO_CONFIG_DATA.1 = 1
+             GYRO_CONFIG_DATA.0 = 1
+             GEN_CONFIG_DATA.2 = 0
+             GEN_CONFIG_DATA.1 = 1 
+             GEN_CONFIG_DATA.0 = 0  
+        CASE 184                                                    '184 HZ
+             GYRO_CONFIG_DATA.1 = 1
+             GYRO_CONFIG_DATA.0 = 1
+             GEN_CONFIG_DATA.2 = 0
+             GEN_CONFIG_DATA.1 = 0
+             GEN_CONFIG_DATA.0 = 1  
+        CASE 250                                                    '250 HZ
+             GYRO_CONFIG_DATA.1 = 1
+             GYRO_CONFIG_DATA.0 = 1
+             GEN_CONFIG_DATA.2 = 0
+             GEN_CONFIG_DATA.1 = 0 
+             GEN_CONFIG_DATA.0 = 0  
+        CASE 3600                                                   '3600 HZ
+             GYRO_CONFIG_DATA.1 = 0
+             GYRO_CONFIG_DATA.0 = 1
+             GEN_CONFIG_DATA.2 = 0
+             GEN_CONFIG_DATA.1 = 0 
+             GEN_CONFIG_DATA.0 = 0
+        CASE 8800                                                   '8800 HZ
+             GYRO_CONFIG_DATA.1 = 0
+             GYRO_CONFIG_DATA.0 = 0
+             GEN_CONFIG_DATA.2 = 0
+             GEN_CONFIG_DATA.1 = 0 
+             GEN_CONFIG_DATA.0 = 0  
+        CASE ELSE                                                   'EXECUTES IF THE USER DID NOT INPUT A VALID NUMBER (92HZ)
+             GYRO_CONFIG_DATA.1 = 1
+             GYRO_CONFIG_DATA.0 = 1
+             GEN_CONFIG_DATA.2 = 0
+             GEN_CONFIG_DATA.1 = 1 
+             GEN_CONFIG_DATA.0 = 0   
+    END SELECT
+RETURN
+                  					  	
+	
+'********** Flash Subroutines **********'
+INIT_SPI:                   'SETS NECESSARY REGISTERS FOR HARDWARE SPI
+    SSP1STAT = %00000000    'DATA SAMPLED IN MIDDLE OF DATA OUTPUT TIME, TRANSMIT OCCURS ON TRANSITION FROM IDLE TO ACTIVE CLOCK, RESET FLAGS
+    SSP1CON1 = %00110000    'ENABLE MSSP MODULE, ENABLE SPI AS MASTER WITH CLOCK SPEED = FOSC/4, CLOCK IDLES HIGH 
+    SSP1CON3 = %00010000    'ENABLE BUFFER OVERWRITING SO IF THE DATA IS WRITTEN TO THE BUFFER WHILE A WRITE IS IN PROGRESS THE MSSP DOESN'T CRASH
+RETURN
+INIT_FLASH:                         'INITIALZES FLASH MEMORY SECTOR SIZES AND SPI MODE
+    GOSUB READ_METADATA             'ALLOWS FLASH TO DETECT THE SPI MODE (EQUIVALENT TO SENDING NULL CHARACTERS TO INITIALIZE UART)
+    FLASH_CS = 0                    'CS GOES LOW TO START A SEQUENCE
+    SSP1BUF = WRITE_ENABLE_CMD      'SEND THE WRITE ENABLE COMMAND ON THE SPI BUS
+    PAUSEUS 1                       'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+    FLASH_CS = 1                    'CS GOES HIGH TO END A SEQUENCE
+    PAUSEUS 1                       'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+    FLASH_CS = 0                    'CS GOES LOW TO START A SEQUENCE
+    SSP1BUF = write_reg             'SEND THE WRITE REGISTER COMMAND ON THE SPI BUS
+    PAUSEUS 1                       'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+    SSP1BUF = flash_status_1_Data   'SEND THE FLASH_STATUS_1_DATA ON THE SPI BUS
+    PAUSEUS 1                       'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+    SSP1BUF = flash_config_data     'SEND THE FLASH_CONFIG_DATA ON THE SPI BUS
+    PAUSEUS 1                       'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+    SSP1BUF = flash_status_2_data   'SEND THE FLASH_STATUS_2_DATA ON THE SPI BUS
+    PAUSEUS 1                       'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+    FLASH_CS = 1                    'CS GOES HIGH TO END A SEQUENCE                          
+    PAUSE 1000                      'GIVE FLASH 1 SECOND TO PROCESS CONFIGURATION SETTINGS (DO NOT DELETE!!!!)
+return
+    
+READ_FLASH_AUTO_INC:                  'READS A SECTOR OF THE FLASH MEMORY AND STORES IT INTO 2 252 BYTE ARRAYS (1 SINGLE 504 BYTE ARRAY NOT PERMITTED WITH PIC18F26K22 ARCHITECTURE), LAST 8 BYTES OF EACH SECTOR NOT USED 
+    GOSUB INIT_SPI
+    FOR I = 0 TO 251                  
+        READ_BUFFER_1[I] = 0          
+    NEXT I
+    FOR I = 0 TO 251                  
+        READ_BUFFER_2[I] = 0          
+    NEXT I
+    
+    FLASH_CS = 0                      'CS GOES LOW TO START A SEQUENCE
+    SSP1BUF = READ_4B_ADDR_CMD        'SEND THE BLOCK READ, 4 BYTE ADDRESS COMMAND ON THE SPI BUS
+    PAUSEUS 1
+    SSP1BUF = TEMP_WRITE_ADDR_H.BYTE1 'SEND 1 BYTE OF THE DESIRED READ ADDRESS TO THE FLASH MEMORY
+    PAUSEUS 1
+    SSP1BUF = TEMP_WRITE_ADDR_H.BYTE0 'SEND 1 BYTE OF THE DESIRED READ ADDRESS TO THE FLASH MEMORY
+    PAUSEUS 1
+    SSP1BUF = TEMP_WRITE_ADDR_L.BYTE1 'SEND 1 BYTE OF THE DESIRED READ ADDRESS TO THE FLASH MEMORY
+    PAUSEUS 1
+    SSP1BUF = TEMP_WRITE_ADDR_L.BYTE0 'SEND 1 BYTE OF THE DESIRED READ ADDRESS TO THE FLASH MEMORY
+    PAUSEUS 1
+    FOR I = 0 TO 251                  'READS 252 BYTES AND STORES THEM IN READ_BUFFER_1
+        SSP1BUF = 0                   'SEND DUMMY CLOCK CYCLE
+        PAUSEUS 1
+        READ_BUFFER_1[I] = SSP1BUF    'STORE THE DATA THAT WAS SHIFTED IN FROM THE FLASH ON THE DUMMY CLOCK CYCLE
+        PAUSEUS 1
+    NEXT I
+    FOR I = 0 TO 251                  'READS 252 BYTES AND STORES THEM IN READ_BUFFER_2
+        SSP1BUF = 0                   'SEND DUMMY CLOCK CYCLE
+        PAUSEUS 1
+        READ_BUFFER_2[I] = SSP1BUF    'STORE THE DATA THAT WAS SHIFTED IN FROM THE FLASH ON THE DUMMY CLOCK CYCLE
+        PAUSEUS 1  
+    NEXT I
+    FLASH_CS = 1                      'CS GOES HIGH TO END A SEQUENCE
+    if TEMP_WRITE_ADDR_L == 65024  then    'EXECUTES IF THE THE LOW WORD OF THE WRITE_ADDRESS IS NOT GOING TO OVERFLOW BY ADDING 512
+        TEMP_WRITE_ADDR_H = TEMP_WRITE_ADDR_H + 1 'INCREMENT THE HIGH ADDRESS BY 1
+        TEMP_WRITE_ADDR_L = 0
+    ELSE                                          'EXECUTES IF THE THE LOW WORD OF THE WRITE_ADDRESS IS GOING TO OVERFLOW BY ADDING 512
+        TEMP_WRITE_ADDR_L = TEMP_WRITE_ADDR_L + 512  'ADD 512 (MOVE TO THE NEXT SECTOR
+    endif 
+return
+
+SECTOR_ERASE:
+    ERASE_SECTOR_COUNT = ((WRITE_ADDR_H) + 1)
+    gosub INIT_SPI
+    for I = 0 TO ERASE_SECTOR_COUNT
+  
+        TEMP_WRITE_ADDR_H = I * 4
+        TEMP_WRITE_ADDR_L = 0
+        
+        FLASH_CS = 0                    'CS GOES LOW TO START A SEQUENCE
+        PAUSEUS 1
+        
+        SSP1BUF = WRITE_ENABLE_CMD      'SEND THE WRITE ENABLE COMMAND ON THE SPI BUS
+        pauseus 1                          'WAIT FOR TRANSMISSION TO COMPLETE
+        
+        FLASH_CS = 1                    'CS GOES HIGH TO END A SEQUENCE                
+        PAUSEUS 1
+        
+        FLASH_CS = 0                    'CS GOES LOW TO START A SEQUENCE                 
+        SSP1BUF = SECTOR_ERASE_CMD
+        pauseus 1                          'WAIT FOR TRANSMISSION TO COMPLETE
+        
+        SSP1BUF = TEMP_WRITE_ADDR_H.BYTE1
+        pauseus 1                          'WAIT FOR TRANSMISSION TO COMPLETE
+        
+        SSP1BUF = TEMP_WRITE_ADDR_H.BYTE0
+        pauseus 1                          'WAIT FOR TRANSMISSION TO COMPLETE
+        
+        SSP1BUF = TEMP_WRITE_ADDR_L.BYTE1
+        pauseus 1   
+                                              
+        FLASH_CS = 1                    'CS GOES HIGH TO END A SEQUENCE   
+        
+        STATUS_REG_DATA.0 = 1
+        WHILE STATUS_REG_DATA.0 == 1
+            FLASH_CS = 0
+            PAUSEUS 1
+            SSP1BUF = STATUS_REGISTER_1_ADDR
+            pauseus 1                          'WAIT FOR TRANSMISSION TO COMPLETE
+            SSP1BUF = 0
+            pauseus 1                          'WAIT FOR TRANSMISSION TO COMPLETE
+            STATUS_REG_DATA = SSP1BUF
+            PAUSEUS 1
+            FLASH_CS = 1
+            'TX_BYTE = STATUS_REG_DATA
+            'GOSUB TX_HEX_BYTE_115200
+            'GOSUB UART_CRLF
+            PAUSE 50
+        WEND
+    NEXT I
+    META_ADDR = 0       
+RETURN
+    
+BULK_ERASE:                         'BULK ERASES THE FLASH MEMORY
+    gosub INIT_SPI
+    FLASH_CS = 0                    'CS GOES LOW TO START A SEQUENCE
+    SSP1BUF = WRITE_ENABLE_CMD      'SEND THE WRITE ENABLE COMMAND ON THE SPI BUS
+    pauseus 1                          'WAIT FOR TRANSMISSION TO COMPLETE
+    FLASH_CS = 1                    'CS GOES HIGH TO END A SEQUENCE                
+    pauseus 1  
+    FLASH_CS = 0                    'CS GOES LOW TO START A SEQUENCE                 
+    SSP1BUF = BULK_ERASE_CMD
+    pauseus 1                          'WAIT FOR TRANSMISSION TO COMPLETE                      
+    FLASH_CS = 1                    'CS GOES HIGH TO END A SEQUENCE   
+    pause 1000                      'WAIT FOR BULK ERASE TO BEGIN
+    STATUS_REG_DATA.0 = 1
+    WHILE STATUS_REG_DATA.0 == 1
+        FLASH_CS = 0
+        SSP1BUF = STATUS_REGISTER_1_ADDR
+        pauseus 1                          'WAIT FOR TRANSMISSION TO COMPLETE
+        SSP1BUF = 0
+        pauseus 1                          'WAIT FOR TRANSMISSION TO COMPLETE
+        STATUS_REG_DATA = SSP1BUF
+        FLASH_CS = 1
+        'TX_BYTE = STATUS_REG_DATA
+        'GOSUB TX_HEX_BYTE_115200
+        'GOSUB UART_CRLF
+        PAUSE 1000
+    WEND
+    META_ADDR = 0
+return    
+
+'****************SERIAL_RX SUBROUTINES*************************************************		
+CALIBRATE_UART:
+    for I = 0 to 10
+        TX_DATA = 0
+        gosub UART_TX_VAR_115200
+    next I
+return	
+UART_CRLF:
+    TX_DATA = 13  
+    gosub UART_TX_VAR_115200  
+    PAUSE 1
+    TX_DATA = 10
+    gosub UART_TX_VAR_115200     
+RETURN
+
+COMM_ERROR_BLINK:
+    GRN_LED = 0
+    FOR LED_COUNTER = 1 TO 3
+        RED_LED = 1
+        PAUSEUS 5
+        BLUE_LED = 1
+        PAUSE 25
+        RED_LED = 0
+        PAUSEUS 5
+        BLUE_LED = 0
+        PAUSE 25
+    NEXT LED_COUNTER
+RETURN  
+    	
+TX_HEX_BYTE_115200:                     'CONVERTS VALUE IN TX_BYTE VARIABLE TO HEXADECIMAL STRING AND TRANSMITS IT VIA UART (ASCII) (NOT USED IN THIS REVISION)
+	FOR HEX_DIGIT_COUNTER = 0 TO 1      'LOOPS THROUGH BOTH DIGITS OF THE HEX BYTE
+		IF HEX_DIGIT_COUNTER == 0 THEN  'EXECUTES IF THE PROGRAM IS CURRENTLY DETERMINING HOW LARGE THE 16'S PLACE DIGIT SHOULD BE
+			HEX_INDEX = TX_BYTE/16      'DETERMINES WHICH CHARACTER TO LOOK UP IN THE SELECT CASE
+		ELSE                            'EXECUTES IF THE PROGRAM IS CURRENTLY DETERMINING HOW LARGE THE 1'S PLACE DIGIT SHOULD BE
+			HEX_INDEX = TX_BYTE // 16   'DETERMINES WHICH CHARACTER TO LOOK UP IN THE SELECT CASE
+			ENDIF
+		
+		SELECT CASE HEX_INDEX           'LOOK UP WHICH ASCII CHARACTER CORRESPONDS TO THE HEX_INDEX (EX. HEX_INDEX = 14, ASCII EQUIVALENT IS "E") 
+			CASE 0
+				TX_DATA = "0"
+			CASE 1
+				TX_DATA = "1"
+			CASE 2
+				TX_DATA = "2"
+			CASE 3
+				TX_DATA = "3"
+			CASE 4
+				TX_DATA = "4"
+			CASE 5
+				TX_DATA = "5"
+			CASE 6
+				TX_DATA = "6"
+			CASE 7
+				TX_DATA = "7"
+			CASE 8
+				TX_DATA = "8"
+			CASE 9
+				TX_DATA = "9"
+			CASE 10
+				TX_DATA = "A"
+			CASE 11
+				TX_DATA = "B"
+			CASE 12
+				TX_DATA = "C"
+			CASE 13
+				TX_DATA = "D"
+			CASE 14
+				TX_DATA = "E"
+			CASE 15
+				TX_DATA = "F"
+			END SELECT	
+		gosub UART_TX_VAR_115200        'TRANMSIT THE VALUE OF TX_BYTE AT 115200 BAUD
+	NEXT HEX_DIGIT_COUNTER              'LOOP
+RETURN
+		
+UART_TX_VAR_115200:                     'TRANSMITS VALUE OF TX_DATA VARIABLE OVER UART AT 115200 BAUD (BIT BANGED)
+	OUTPUT UART_TX                      'Change UART_TX from INPUT to OUTPUT (Set as INPUT when UART not is use to avoid programming conflicts)
+    UART_TX = 0							'START BIT
+	pauseus UART_PERIOD_VAR_115200		'DELAY TO REACH APPROXIMATE PULSE WIDTH
+	gosub waste_time                	'USED FOR PULSE WIDTH TUNING
+	gosub waste_time                	'USED FOR PULSE WIDTH TUNING
+    for BIT_INDEX = 0 to 7              'LOOPS THROUGH EACH BIT OF THE VARIABLE
+		UART_TX = TX_DATA.0[BIT_INDEX]  'LOOKUP BIT STATE LSB FIRST
+		pauseus UART_PERIOD_VAR_115200  'DELAY TO REACH APPROXIMATE PULSE WIDTH
+		gosub waste_time                'USED FOR PULSE WIDTH TUNING
+		next BIT_INDEX
+	pauseus 3                           'DELAY TO REACH APPROXIMATE PULSE WIDTH
+    UART_TX = 1      			        'STOP BIT
+	pauseus UART_PERIOD_VAR_115200      'DELAY TO REACH APPROXIMATE PULSE WIDTH
+	gosub waste_time                	'USED FOR PULSE WIDTH TUNING
+    gosub waste_time                    'USED FOR PULSE WIDTH TUNING
+    INPUT UART_TX                       'Change UART_TX back to INPUT (Set as INPUT when UART not is use to avoid programming conflicts)
+    PAUSEUS 2
+return                         
+				
+WASTE_TIME:                            'DUMMY INSTRUCTION CYCLE FOR ACCURATE CLOCKING ON UART
+return
+          
+'****************ADDRESSING AND VARIABLE ROUTINES********************************
+SAVE_TEST_PARAMS:                      'RECEIVES TEST PARAMETERS FROM THE PC AND STORES THE VALUES IN THE PICS EEPROM FOR FUTURE REFERENCE
+    IF DATA_OUT_BYPASS=1 THEN BYPASS8
+    GOSUB CLR                          'CLEAR THE LCD
+    OUTPUT DSP
+    SEROUT DSP, N9600, [POSCMD, LINE1,"WAITING FOR DATA"]  'NOTIFY THE USER THAT THE MODULE IS WAITING FOR DATA
+    INPUT DSP
+BYPASS8:
+    PARAM_COUNTER = 0
+    WHILE PARAM_COUNTER < NUM_PARAMS
+        GET_PARAM:
+        serin2 UART_RX, 6, [WAIT("01234"), HEX4 TEMP_RX_BUFFER]
+        BLUE_LED = 0
+        SEROUT2 UART_TX, 6, [HEX4 TEMP_RX_BUFFER]              
+        serin2 UART_RX, 6, [WAIT("A"), ACKNOWLEDGE_BYTE]
+        BLUE_LED = 1
+        IF ACKNOWLEDGE_BYTE == "N" THEN
+            GOTO GET_PARAM
+        ENDIF 
+        TEST_PARAMS[PARAM_COUNTER] = TEMP_RX_BUFFER
+        PARAM_COUNTER = PARAM_COUNTER + 1    
+    WEND
+    
+    BLUE_LED = 0
+    
+    FOR I = 0 TO NUM_PARAMS - 1 STEP 2
+        WRITE I, WORD TEST_PARAMS[I]
+        PAUSE 10
+    NEXT I
+    
+    FOR I = 1 TO 4                         'BLINK THE GREEN LED 4 TIMES TO NOTIFY THE USER THAT IT SUCCESSFULLY RECEIVED THE TEST PARAMETERS AND STORED THEM
+        GRN_LED = 1
+        PAUSE 350
+        GRN_LED = 0
+        PAUSE 350
+    NEXT I
+    BLUE_LED = 0
+RETURN
+
+GET_TEST_PARAMS:
+    'INIALIZE VARIABLES TO 0 TO ENSURE THAT READING FROM THE EEPROM WAS SUCCESSFUL AND NOT JUST LEFT OVER VALUES FROM A PREVIOUS WRITE CYCLE (DEBUG)
+    ACCEL_GYRO_SAMPLE_RATE = 0            
+    MAG_SAMPLE_RATE = 0
+    TEST_DURATION = 0
+    ACCEL_SENSITIVITY = 0
+    GYRO_SENSITIVITY = 0
+    ACCEL_FILTER = 0
+    GYRO_FILTER = 0
+    
+    FOR I = 0 TO NUM_PARAMS - 1 STEP 2
+        read I, WORD TEST_PARAMS[I]
+        PAUSE 10
+    NEXT I
+
+    IF ACCEL_GYRO_SAMPLE_RATE == 65535 THEN      'IF THERE WAS NO DATA IN THE EEPROM, RESTORE DEFUALTS
+       ACCEL_GYRO_SAMPLE_RATE = DEF_ACCEL_GYRO_SAMPLE_RATE
+    ENDIF    
+    IF MAG_SAMPLE_RATE == 65535 THEN             'IF THERE WAS NO DATA IN THE EEPROM, RESTORE DEFUALTS
+       MAG_SAMPLE_RATE= DEF_MAG_SAMPLE_RATE
+    ENDIF  
+    IF TEST_DURATION == 65535 THEN               'IF THERE WAS NO DATA IN THE EEPROM, RESTORE DEFUALTS
+       TEST_DURATION= DEF_TEST_DURATION
+    ENDIF
+    IF ACCEL_SENSITIVITY == 65535 THEN           'IF THERE WAS NO DATA IN THE EEPROM, RESTORE DEFUALTS
+       ACCEL_SENSITIVITY = DEF_ACCEL_SENSITIVITY
+    ENDIF    
+    IF GYRO_SENSITIVITY == 65535 THEN            'IF THERE WAS NO DATA IN THE EEPROM, RESTORE DEFUALTS
+       GYRO_SENSITIVITY= DEF_GYRO_SENSITIVITY
+    ENDIF  
+    IF ACCEL_FILTER == 65535 THEN                'IF THERE WAS NO DATA IN THE EEPROM, RESTORE DEFUALTS
+       ACCEL_FILTER = DEF_ACCEL_FILTER
+    ENDIF 
+    IF GYRO_FILTER == 65535 THEN                 'IF THERE WAS NO DATA IN THE EEPROM, RESTORE DEFUALTS
+       GYRO_FILTER = DEF_GYRO_FILTER
+    ENDIF    
+RETURN
+
+SEND_TEST_PARAMS:                                                                                   
+    GOSUB GET_TEST_PARAMS
+    'NUMBER OF TESTS TO BE TRANSFERED
+    TX_DATA = NUM_OF_TESTS                              'SET UART TRANSMISSION VARIABLE TO THE NUMBER OF TESTS THAT ARE ABOUT TO BE TRANSMITTED
+    gosub UART_TX_VAR_115200                            'TRANSMITS THE VALUE OF TX_DATA TO THE PC VIA UART AT 115200 BAUD
+    PAUSEUS 5
+    
+    FOR I = 0 TO NUM_PARAMS - 1 STEP 2
+        TX_DATA = TEST_PARAMS[I].BYTE1
+        GOSUB UART_TX_VAR_115200
+        PAUSEUS 5
+        TX_DATA = TEST_PARAMS[I].BYTE0
+        GOSUB UART_TX_VAR_115200
+        PAUSEUS 5
+    NEXT I
+    
+RETURN
+    
+TIMEOUT_LABEL:                'EXECUTES IF NO DATA IS RECEIVED FROM THE PC AFTER A CERTAIN AMOUNT OF TIME
+    GRN_LED = 0               'TURN OFF THE GREEN LED
+    FOR I = 1 TO 4            'BLINK RED 4 TIMES TO NOTIFY THE USER THAT NO DATA WAS RECEIVED FROM THE PC
+        RED_LED = 1
+        PAUSE 350
+        RED_LED = 0
+        PAUSE 350
+    NEXT I
+    BLUE_LED = 0
+'    GOSUB CLR
+'    SEROUT DSP, N9600, [POSCMD, LINE1, "TIMEOUT"]
+'    PAUSE 2000
+RETURN
+STR_TO_HEX:                                  'CONVERTS ASCII CHARACTER TO DECIMAL AND STORES THE RESULT IN HEX_RETURN
+     select CASE RAW_RX_DATA[HEX_INDEX]      'SELECT WHICH CHARACTER TO CONVERT BASED ON THE VALUE AT THE HEX_INDEX OF THE RAW_RX_DATA ARRAY
+         case "0"
+              HEX_RETURN = 0 
+         case "1"
+              HEX_RETURN = 1 
+         case "2"
+              HEX_RETURN = 2 
+         case "3"
+              HEX_RETURN = 3
+         case "4"
+              HEX_RETURN = 4 
+         case "5"
+              HEX_RETURN = 5
+         case "6"
+              HEX_RETURN = 6 
+         case "7"
+              HEX_RETURN = 7
+         case "8"
+              HEX_RETURN = 8 
+         case "9"
+              HEX_RETURN = 9
+         case "A"
+              HEX_RETURN = 10
+         case "B"
+              HEX_RETURN = 11 
+         case "C"
+              HEX_RETURN = 12
+         case "D"
+              HEX_RETURN = 13 
+         case "E"
+              HEX_RETURN = 14
+         case "F"
+              HEX_RETURN = 15
+      END SELECT
+return
+INIT_NAVIG_VARS:                      'INITIALIZES META_ADDRESS AND WRITE_ADDRESS_H/WRITE_ADDRESS_L SO MULTIPLE TEST CAN BE RUN DESPITE POWER CYCLING THE MODULE
+    gosub READ_METADATA               'READ THE METADATA ARRAY (ADDRESS 0-504) AND STORE THE DATA IN META_BUFFER_1 (DATA AT ADDRESSES 0-251) AND META_BUFFER_2 (DATA AT ADDRESSES 252-504) 
+    META_ADDR = 500                   'START BY LOOKING AT THE HIGHEST META_ADDR
+    ADDR_LOOP:                        'LOOP THAT DETERMINES WHAT THE LAST USED META_ADDRESS WAS BEFORE THE POWER CYCLE
+    
+    if META_ADDR < 248 then       'EXECUTES IF THE META_ADDRESS IS POINTING TO DATA THAT WOULD BE STORED IN THE META_BUFFER_1
+        IF (META_BUFFER_1[META_ADDR] == 255) AND (META_BUFFER_1[META_ADDR + 1] == 255) AND (META_BUFFER_1[META_ADDR + 2] == 255) AND (META_BUFFER_1[META_ADDR + 3] == 255) THEN 'EXECUTES IF THE DATA AT THE 
+                                                                                                                      'CURRENT ADDRESS IS ALL 255'S MEANING THAT THIS ADDRESS HAS NOT BEEN USED SINCE THE LAST BULK ERASE
+            IF META_ADDR > 3 THEN           'EXECUTES IF THE META_ADDR IS GREATER THAN 3 (4 CAN BE SUBTRACTED FROM IT)
+               META_ADDR = META_ADDR - 4    'SUBTRACT 4 FROM THE META ADDRESS TO CHECK IF THERE WAS A TEST LOCATION STORED IN THE NEXT PORTION META DATA SECTOR
+            ELSE                            'EXECUTES IF THE META_ADDR = 0 MEANING THERE ARE NO TESTS
+               WRITE_ADDR_H = 0                                'RESET WRITE ADDRESSES TO BEGINNING OF FLASH ALLOCATED DATA 
+               WRITE_ADDR_L = 512                              
+               META_ADDR = 0
+               GOTO ADDRESS_SET 
+            ENDIF
+            GOTO ADDR_LOOP                  'LOOP AND EVALUATE THE DATA AT THE NEW META_ADDR
+        ELSE                               'EXECUTES IF THERE IS A TEST LOCATION STORED IN THE CURRENT META_ADDR
+            WRITE_ADDR_H.BYTE1 = META_BUFFER_1[META_ADDR]
+            WRITE_ADDR_H.BYTE0 = META_BUFFER_1[META_ADDR + 1]
+            WRITE_ADDR_l.BYTE1 = META_BUFFER_1[META_ADDR + 2]
+            WRITE_ADDR_l.BYTE0 = META_BUFFER_1[META_ADDR + 3] 
+            META_ADDR = META_ADDR + 4
+            GOTO ADDRESS_SET
+        endif
+    else                          'EXECUTES IF THE META_ADDRESS IS POINTING TO DATA THAT WOULD BE STORED IN THE META_BUFFER_2
+        IF (META_BUFFER_2[META_ADDR - 252] == 255) AND (META_BUFFER_2[META_ADDR + 1 - 252] == 255) AND (META_BUFFER_2[META_ADDR + 2 - 252] == 255) AND (META_BUFFER_2[META_ADDR + 3 - 252] == 255) THEN 'EXECUTES IF THE DATA AT THE 
+           META_ADDR = META_ADDR - 4    'SUBTRACT 4 FROM THE META ADDRESS TO CHECK IF THERE WAS A TEST LOCATION STORED IN THE NEXT PORTION META DATA SECTOR
+           GOTO ADDR_LOOP                 'LOOP AND EVALUATE THE DATA AT THE NEW META_ADDR
+        ELSE                              'EXECUTES IF THERE IS A TEST LOCATION STORED IN THE CURRENT META_ADDR
+            WRITE_ADDR_H.BYTE1 = META_BUFFER_2[META_ADDR - 252]
+            WRITE_ADDR_H.BYTE0 = META_BUFFER_2[META_ADDR + 1 - 252]
+            WRITE_ADDR_l.BYTE1 = META_BUFFER_2[META_ADDR + 2 - 252]
+            WRITE_ADDR_l.BYTE0 = META_BUFFER_2[META_ADDR + 3 - 252] 
+            META_ADDR = META_ADDR + 4
+            GOTO ADDRESS_SET            
+        endif
+    endif
+    
+    ADDRESS_SET:
+    
+    'SEND VARIABLES (DEBUG)
+    'TX_DATA = 73    'I IN ASCII
+    'GOSUB UART_TX_VAR_115200
+    'PAUSE 10
+    'GOSUB UART_CRLF
+    'TX_BYTE = META_ADDR.BYTE1
+    'GOSUB TX_HEX_BYTE_115200
+    'TX_BYTE = META_ADDR.BYTE0
+    'GOSUB TX_HEX_BYTE_115200
+    'GOSUB UART_CRLF
+    'TX_BYTE = WRITE_ADDR_H.BYTE1
+    'GOSUB TX_HEX_BYTE_115200
+    'TX_BYTE = WRITE_ADDR_H.BYTE0
+    'GOSUB TX_HEX_BYTE_115200
+    'TX_BYTE = WRITE_ADDR_l.BYTE1
+    'GOSUB TX_HEX_BYTE_115200
+    'TX_BYTE = WRITE_ADDR_l.BYTE0
+    'GOSUB TX_HEX_BYTE_115200
+    'GOSUB UART_CRLF
+    'PAUSE 100
+return
+    
+STORE_METADATA:                     'STORES THE LOCATION OF WHERE THE DATA THAT IS ABOUT TO BE COLLECTED WILL BE STORED (START ADDRESS OF TEST) IN THE META ADDRESS SECTOR (0-503)
+    GOSUB INIT_SPI
+    FLASH_CS = 0                    'CS GOES LOW TO START A SEQUENCE
+    SSP1BUF = WRITE_ENABLE_CMD      'SEND THE WRITE ENABLE COMMAND ON THE SPI BUS
+    PAUSEUS 1                       'PAUSE TO ALLOW THE PREVIOUS INSTRUCTION TO FULLY EXECUTE
+    FLASH_CS = 1                    'CS GOES HIGH TO END A SEQUENCE
+    PAUSEUS 1                       'PAUSE TO ALLOW THE PREVIOUS INSTRUCTION TO FULLY EXECUTE
+    FLASH_CS = 0                    'CS GOES LOW TO START A SEQUENCE
+    SSP1BUF = PP_4B_ADDR_CMD        'SEND THE BLOCK WRITE, 4 BYTE ADDRESS COMMAND ON THE SPI BUS
+    PAUSEUS 1                       'PAUSE TO ALLOW THE PREVIOUS INSTRUCTION TO FULLY EXECUTE
+    SSP1BUF = 0                     'SEND 0 AS THE MSB OF THE MSW OF THE ADDRESS
+    PAUSEUS 1                       'PAUSE TO ALLOW THE PREVIOUS INSTRUCTION TO FULLY EXECUTE
+    SSP1BUF = 0                     'SEND 0 AS THE LSB OF THE MSW OF THE ADDRESS
+    PAUSEUS 1                       'PAUSE TO ALLOW THE PREVIOUS INSTRUCTION TO FULLY EXECUTE
+    SSP1BUF = META_ADDR.BYTE1       'SEND THE HIGH BYTE OF THE META_ADDR AS THE MSB OF THE LSW OF THE ADDRESS
+    PAUSEUS 1                       'PAUSE TO ALLOW THE PREVIOUS INSTRUCTION TO FULLY EXECUTE
+    SSP1BUF = META_ADDR.BYTE0       'SEND THE LOW BYTE OF THE META_ADDR AS THE LSB OF THE LSW OF THE ADDRESS
+    PAUSEUS 1                       'PAUSE TO ALLOW THE PREVIOUS INSTRUCTION TO FULLY EXECUTE
+    SSP1BUF = WRITE_ADDR_H.BYTE1    'SAVE THE HIGH BYTE OF THE MSW OF WHERE THE TEST THAT IS ABOUT TO BE EXECUTED WILL BE STORED
+    PAUSEUS 1                       'PAUSE TO ALLOW THE PREVIOUS INSTRUCTION TO FULLY EXECUTE
+    SSP1BUF = WRITE_ADDR_H.BYTE0    'SAVE THE LOW BYTE OF THE MSW OF WHERE THE TEST THAT IS ABOUT TO BE EXECUTED WILL BE STORED
+    PAUSEUS 1                       'PAUSE TO ALLOW THE PREVIOUS INSTRUCTION TO FULLY EXECUTE
+    SSP1BUF = WRITE_ADDR_L.BYTE1    'SAVE THE HIGH BYTE OF THE LSW OF WHERE THE TEST THAT IS ABOUT TO BE EXECUTED WILL BE STORED
+    PAUSEUS 1                       'PAUSE TO ALLOW THE PREVIOUS INSTRUCTION TO FULLY EXECUTE
+    SSP1BUF = WRITE_ADDR_L.BYTE0    'SAVE THE LOW BYTE OF THE LSW OF WHERE THE TEST THAT IS ABOUT TO BE EXECUTED WILL BE STORED
+    PAUSEUS 1                       'PAUSE TO ALLOW THE PREVIOUS INSTRUCTION TO FULLY EXECUTE
+    FLASH_CS = 1                    'CS GOES HIGH TO END A SEQUENCE  
+    META_ADDR = META_ADDR + 4       'AUTOINCREMENT THE META_ADDR SO THE NEXT TEST WILL LOCATION WILL STORE IN THE NEXT PORTION OF THE METADATA SECTOR
+return
+    
+READ_METADATA:                      'READS THE META DATA SECTOR (ADDRESS 0-503 OF FLASH) AND STORES DATA INTO 2 META DATA BUFFERS (1 SINGLE 504 BYTE ARRAY NOT PERMITTED WITH PIC18F26K22 ARCHITECTURE) 
+    GOSUB INIT_SPI
+    FLASH_CS = 0                    'CS GOES LOW TO START A SEQUENCE                    
+    SSP1BUF = READ_4B_ADDR_CMD      'SEND READ COMMAND TO FLASH
+    PAUSEUS 1                       'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+    SSP1BUF = 0                     'SEND 0 (MSB OF MSW OF ADDRESS)
+    PAUSEUS 1                       'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+    SSP1BUF = 0                     'SEND 0 (LSB OF MSW OF ADDRESS)
+    PAUSEUS 1                       'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+    SSP1BUF = 0                     'SEND 0 (MSB OF LSW OF ADDRESS)
+    PAUSEUS 1                       'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+    SSP1BUF = 0                     'SEND 0 (LSB OF LSW OF ADDRESS)
+    PAUSEUS 1                       'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+    FOR I = 0 TO 251                'LOOPS TO READ 252 BYTES
+        SSP1BUF = 0                 'SEND 0 (DUMMY CLOCK CYCLE)
+        PAUSEUS 1                   'PAUSE TO ALLOW THE DATA TO TRANSMIT
+        META_BUFFER_1[I] = SSP1BUF  'STORE THE RECEIVED DATA
+    NEXT I
+    FOR I = 0 TO 251
+        SSP1BUF = 0                 'SEND 0 (DUMMY CLOCK CYCLE)
+        PAUSEUS 1                   'PAUSE TO ALLOW THE DATA TO TRANSMIT
+        META_BUFFER_2[I] = SSP1BUF  'STORE THE RECEIVED DATA  
+    NEXT I
+    FLASH_CS = 1                    'CS GOES HIGH TO END A SEQUENCE
+return
+    
+PRINT_METADATA:                  'READS AND PRINTS (VIA UART TO PC) THE META DATA SECTOR (ADDRESS 0-503 OF FLASH)
+    GOSUB READ_METADATA          'READS THE METADATA SECTOR AND STORES THE DATA IN META_BUFFER_1 AND META_BUFFER_2
+
+    for I = 0 to 251             'PRINTS THE EACH VALUE OF META_BUFFER_1 TO THE PC VIA UART
+        TX_BYTE = META_BUFFER_1[I] 'SET UART TRANSMISSION VARIABLE EQUAL TO THE DATA IN THE CURRENT ADDRESS OF THE META_BUFFER_1
+        GOSUB TX_HEX_BYTE_115200   'TRANSMIT THE VALUE OF TX_DATA AT 115200 BAUD 
+        next I                      
+    for I = 0 to 251             'PRINTS THE EACH VALUE OF META_BUFFER_2 TO THE PC VIA UART
+        TX_BYTE = META_BUFFER_2[I] 'SET UART TRANSMISSION VARIABLE EQUAL TO THE DATA IN THE CURRENT ADDRESS OF THE META_BUFFER_2   
+        GOSUB TX_HEX_BYTE_115200   'TRANSMIT THE VALUE OF TX_DATA AT 115200 BAUD   
+        next I  
+    GOSUB UART_CRLF                    
+return 
+
+SEND_DATA_TO_PC:                'TRANSMITS ALL TESTS FROM THE FLASH MEMORY TO THE PC VIA UART WITH A DELIMITER FOR THE RECIEVING JAVA PROGRAM TO TRACK ON
+    gosub INIT_NAVIG_VARS
+    
+    TEMP_WRITE_ADDR_H = 0       'START THE TRANSMISSION WHERE THE FIRST TEST DATA IS STORED
+    TEMP_WRITE_ADDR_L = 512     '^^^
+    
+    IF META_ADDR = 0  THEN                                   'EXECUTES IF THERE ARE NO TESTS SAVED ON THE FLASH
+       IF DATA_OUT_BYPASS=1 THEN BYPASS13
+       GOSUB CLR                                             'CLEAR THE LCD
+       OUTPUT DSP
+       serout DSP, N9600, [POSCMD, LINE2, "NO TEST DATA FOUND"] 'PRINT TO THE LCD TO NOTIFY THE USER THAT NO TESTING DATA HAS BEEN FOUND
+       INPUT DSP
+BYPASS13:
+       FOR LED_COUNTER = 1 TO 5
+             RED_LED = 1                                     'BLINK GREEN LED
+             PAUSE 500                                       '^^^
+             RED_LED = 0                                     '^^^
+             PAUSE 500                                       '^^^                                                                              
+       NEXT LED_COUNTER
+       BLUE_LED = 0
+       
+    ELSE                                                     'EXECUTES IF THERE ARE TESTS SAVED ON THE FLASH
+        for I = 1 to 50                                      'SEND 50 NULL CHARACTERS TO ALL UART DONGLE TO LATCH TO THE BAUD RATE
+            TX_DATA = 0                                      'SET UART TRANSMISSION VARIABLE TO 0 (NULL CHARACTER)
+            gosub UART_TX_VAR_115200                         'TRANSMITS THE VALUE OF TX_DATA TO THE PC VIA UART AT 115200 BAUD
+        next I  
+        NUM_OF_TESTS = META_ADDR/4                          'CALCULATES THE NUMBER OF TESTS STORED IN THE FLASH MEMORY
+        IF DATA_OUT_BYPASS=1 THEN BYPASS14
+        OUTPUT DSP
+        serout DSP, N9600, [POSCMD, LINE3, #NUM_OF_TESTS]   'PRINT THE NUMBER OF TEST STORED IN THE FLASH TO THE LCD   
+        INPUT DSP
+BYPASS14:
+        GOSUB SEND_TEST_PARAMS
+        META_ADDR = 0                                       'START AT THE BEGINNING OF THE METADATA SECTOR
+        GOSUB READ_METADATA                                 'READ THE METADATA SECTOR AND STORE IT IN META)BUFFER_1 AND 2
+
+        FOR TEST_TX_COUNTER = 1 TO NUM_OF_TESTS             'EXECUTES FOR EACH TEST STORED IN THE FLASH
+            IF META_ADDR == 0 THEN
+                TEMP_WRITE_ADDR_H = 0
+                TEMP_WRITE_ADDR_L = 512
+                
+                END_WRITE_ADDR_H.BYTE1 = META_BUFFER_1[META_ADDR]
+                END_WRITE_ADDR_H.BYTE0 = META_BUFFER_1[META_ADDR + 1]
+                END_WRITE_ADDR_L.BYTE1 = META_BUFFER_1[META_ADDR + 2]
+                END_WRITE_ADDR_L.BYTE0 = META_BUFFER_1[META_ADDR + 3]
+            ELSEIF META_ADDR <= 248 THEN                             'EXECUTES IF THE CURRENT TEST ADDRESS WOULD BE STORED IN META_BUFFER_1
+                TEMP_WRITE_ADDR_H.byte1 = META_BUFFER_1[META_ADDR - 4] 'SET THE START ADDRESS OF THE TRANSMISSION TO THE ADDRESS STORED IN THE META ADDRESS SECTOR
+                TEMP_WRITE_ADDR_H.byte0 = META_BUFFER_1[META_ADDR - 3]'^^^
+                TEMP_WRITE_ADDR_L.byte1 = META_BUFFER_1[META_ADDR - 2] '^^^
+                TEMP_WRITE_ADDR_L.byte0 = META_BUFFER_1[META_ADDR - 1] '^^^
+                
+                END_WRITE_ADDR_H.BYTE1 = META_BUFFER_1[META_ADDR]
+                END_WRITE_ADDR_H.BYTE0 = META_BUFFER_1[META_ADDR + 1]
+                END_WRITE_ADDR_L.BYTE1 = META_BUFFER_1[META_ADDR + 2]
+                END_WRITE_ADDR_L.BYTE0 = META_BUFFER_1[META_ADDR + 3]
+            ELSE                                            'EXECUTES IF THE CURRENT TEST ADDRESS WOULD BE STORED IN META_BUFFER_2
+                TEMP_WRITE_ADDR_H.byte1 = META_BUFFER_2[META_ADDR - 4] 'SET THE START ADDRESS OF THE TRANSMISSION TO THE ADDRESS STORED IN THE META ADDRESS SECTOR
+                TEMP_WRITE_ADDR_H.byte0 = META_BUFFER_2[META_ADDR - 3]'^^^
+                TEMP_WRITE_ADDR_L.byte1 = META_BUFFER_2[META_ADDR - 2] '^^^
+                TEMP_WRITE_ADDR_L.byte0 = META_BUFFER_2[META_ADDR - 1] '^^^
+                
+                END_WRITE_ADDR_H.BYTE1 = META_BUFFER_2[META_ADDR]
+                END_WRITE_ADDR_H.BYTE0 = META_BUFFER_2[META_ADDR + 1]
+                END_WRITE_ADDR_L.BYTE1 = META_BUFFER_2[META_ADDR + 2]
+                END_WRITE_ADDR_L.BYTE0 = META_BUFFER_2[META_ADDR + 3]
+            ENDIF
+            IF DATA_OUT_BYPASS=1 THEN BYPASS15
+            GOSUB CLR
+            OUTPUT DSP
+            serout DSP, N9600, [POSCMD, LINE3, #TEMP_WRITE_ADDR_H,",", #TEMP_WRITE_ADDR_L]  'PRINT THE STARTING ADDRESS TO THE LCD (DEBUG)
+            INPUT DSP
+BYPASS15:
+            for I = 0 to 9                                'SENDS 0-9 AS A TEST DELIMITER FOR THE JAVA PROGRAM
+                TX_DATA = I                               'SET UART TRANSMISSION VARIABLE TO THE VALUE OF I (DELIMITER)
+                gosub UART_TX_VAR_115200                  'TRANSMITS THE VALUE OF TX_DATA TO THE PC VIA UART AT 115200 BAUD
+            next I  
+             
+            WHILE TEMP_WRITE_ADDR_H < END_WRITE_ADDR_H OR TEMP_WRITE_ADDR_L < END_WRITE_ADDR_L  
+            
+                gosub READ_FLASH_AUTO_INC                    'READ A SECTOR OF THE FLASH AND STORE THE DATA IN READ_BUFFER_1 AND READ_BUFFER_2
+                for I = 0 to 251                            'LOOPS THROUGH EACH VALUE OF THE READ_BUFFER_1
+                    TX_DATA = READ_BUFFER_1[I]              'SET UART TRANSMISSION VARIABLE TO THE DATA BYTE AT THE CURRENT ADDRESS OF THE READ_BUFFER_1
+                    GOSUB UART_TX_VAR_115200                'TRANSMITS THE VALUE OF TX_DATA TO THE PC VIA UART AT 115200 BAUD
+               	next I
+                if PB == 1 OR RCVR_D1 = 1 then EXIT_SEND_DATA_TO_PC
+                for I = 0 to 251                           'LOOPS THROUGH EACH VALUE OF THE READ_BUFFER_2
+                    TX_DATA = READ_BUFFER_2[I]             'SET UART TRANSMISSION VARIABLE TO THE DATA BYTE AT THE CURRENT ADDRESS OF THE READ_BUFFER_1
+                    GOSUB UART_TX_VAR_115200               'TRANSMITS THE VALUE OF TX_DATA TO THE PC VIA UART AT 115200 BAUD
+                next I
+            WEND
+            META_ADDR = META_ADDR + 4                     'MOVE TO THE NEXT META_ADDRESS
+            for I = 9 to 0 step -1                               'SENDS 0-9 AS A TEST DELIMITER FOR THE JAVA PROGRAM
+                TX_DATA = I                               'SET UART TRANSMISSION VARIABLE TO THE VALUE OF I (DELIMITER)
+                gosub UART_TX_VAR_115200                  'TRANSMITS THE VALUE OF TX_DATA TO THE PC VIA UART AT 115200 BAUD
+            next I  
+         NEXT TEST_TX_COUNTER   
+    ENDIF
+EXIT_SEND_DATA_TO_PC:
+    BLUE_LED = 0
+return
+
+
+LED_COUNTDOWN:                         'LED SEQUENCE THAT BLINKS BEFORE A TEST BEGINS
+  	GRN_LED = 1
+	pause 750
+	GRN_LED = 0 
+	pause 250
+	RED_LED = 1
+	pause 750
+	RED_LED = 0 
+	pause 250
+	BLUE_LED = 1
+	pause 750
+	BLUE_LED = 0 
+	pause 250  
+return
+
+INIT_TMR0_VARS:
+    SELECT CASE ACCEL_GYRO_SAMPLE_RATE
+    
+    CASE 60
+        T0CON_CONFIG_DATA = %10000001            'ENABLES TIMER0, SETS AS 16-BIT, SET CLKOUT (T0CKI PIN) AS SOURCE,
+                                                 'INCREMENT ON RISING EDGE OF T0CKI PIN, ASSIGN PRESCALER OF 4 (PRECISION OF 500nS WITH 8MHZ CRYSTAL)
+        TMR0_TICK_THRESHOLD = TMR0_THRESH_60_60
+    CASE 120
+        T0CON_CONFIG_DATA = %10000000            'ENABLES TIMER0, SETS AS 16-BIT, SET CLKOUT (T0CKI PIN) AS SOURCE,
+                                                 'INCREMENT ON RISING EDGE OF T0CKI PIN, ASSIGN PRESCALER OF 2 (PRECISION OF 250nS WITH 8MHZ CRYSTAL)
+        TMR0_TICK_THRESHOLD = TMR0_THRESH_120_120
+    CASE 240
+        T0CON_CONFIG_DATA = %10000000            'ENABLES TIMER0, SETS AS 16-BIT, SET CLKOUT (T0CKI PIN) AS SOURCE,
+                                                 'INCREMENT ON RISING EDGE OF T0CKI PIN, ASSIGN PRESCALER OF 2 (PRECISION OF 250nS WITH 8MHZ CRYSTAL)
+        TMR0_TICK_THRESHOLD = TMR0_THRESH_240_24
+    CASE 480
+        T0CON_CONFIG_DATA = %10000000            'ENABLES TIMER0, SETS AS 16-BIT, SET CLKOUT (T0CKI PIN) AS SOURCE,
+                                                 'INCREMENT ON RISING EDGE OF T0CKI PIN, ASSIGN PRESCALER OF 2 (PRECISION OF 250nS WITH 8MHZ CRYSTAL)
+        TMR0_TICK_THRESHOLD = TMR0_THRESH_480_48
+    CASE 500
+        T0CON_CONFIG_DATA = %10000000            'ENABLES TIMER0, SETS AS 16-BIT, SET CLKOUT (T0CKI PIN) AS SOURCE,
+                                                 'INCREMENT ON RISING EDGE OF T0CKI PIN, ASSIGN PRESCALER OF 2 (PRECISION OF 250nS WITH 8MHZ CRYSTAL)
+        TMR0_TICK_THRESHOLD = TMR0_THRESH_500_50
+    CASE 960
+        T0CON_CONFIG_DATA = %10000000            'ENABLES TIMER0, SETS AS 16-BIT, SET CLKOUT (T0CKI PIN) AS SOURCE,
+                                                 'INCREMENT ON RISING EDGE OF T0CKI PIN, ASSIGN PRESCALER OF 2 (PRECISION OF 250nS WITH 8MHZ CRYSTAL)
+        TMR0_TICK_THRESHOLD = TMR0_THRESH_960_96
+    CASE 1000
+        T0CON_CONFIG_DATA = %10000000            'ENABLES TIMER0, SETS AS 16-BIT, SET CLKOUT (T0CKI PIN) AS SOURCE,
+                                                 'INCREMENT ON RISING EDGE OF T0CKI PIN, ASSIGN PRESCALER OF 2 (PRECISION OF 250nS WITH 8MHZ CRYSTAL)
+        TMR0_TICK_THRESHOLD = TMR0_THRESH_1000_100
+    CASE ELSE
+        T0CON_CONFIG_DATA = %10000000            'ENABLES TIMER0, SETS AS 16-BIT, SET CLKOUT (T0CKI PIN) AS SOURCE,
+                                                 'INCREMENT ON RISING EDGE OF T0CKI PIN, ASSIGN PRESCALER OF 2 (PRECISION OF 250nS WITH 8MHZ CRYSTAL)
+        TMR0_TICK_THRESHOLD = TMR0_THRESH_120_120
+    END SELECT
+    TMR0H = (65535 - TMR0_TICK_THRESHOLD) / 256     'SET HIGH BYTE OF TMR0 VALUE SO IT OVERFLOWS AT THE DESIRED PERIOD
+    TMR0L = (65535 - TMR0_TICK_THRESHOLD) // 256    'SET LOW BYTE OF TMR0 VALUE SO IT OVERFLOWS AT THE DESIRED PERIOD
+    INTCON.2 = 0                                    'RESET TMR0 OVERFLOW INTERRUPT
+RETURN
+DISABLE_TMR0 
+    T0CON = %00000000   
+    INTCON.2 = 0                                    'RESET TMR0 OVERFLOW INTERRUPT
+RETURN  
+
+  
+COLLECT_DATA:                       'COLLECT DATA FROM MPU AND STORE IT IN THE FLASH MEMORY BASED ON THE PARAMETER CONSTANTS DEFINED AT THE TOP OF THE PROGRAM
+    'INPUT UART_RX
+    GOSUB INIT_TMR0_VARS            'INITIALIZE VARIABLES THAT DETERMINE THE PRESCALER AND SAMPLE RATE FOR SAMPLING DATA
+'    GOSUB PRINT_METADATA            'DEBUG
+    if REMOTE_FLAG == 0 THEN
+        gosub LED_COUNTDOWN             'LED COUNTDOWN TO THE BEGINNING OF THE TEST
+        ENDIF
+    BLUE_LED = 0
+    GRN_LED = 0
+    RED_LED = 0                     'TURN ON THE RED LED TO NOTIFY THE USER THAT DATA IS BEING COLLECTED
+    SET_COUNTER = 0                 'RESET COUNTER THAT DETERMINES WHEN TO MOVE TO THE NEXT SECTOR
+    
+    ON interrupt goto SAMPLE_DATA                    'SPECIFIES THE SUBROUTINE TO EXECUTE WHEN AN INTERRUPT IS DETECTED
+    INTCON = %10100000                               'ENABLES GLOBAL INTERRUPTS AND TMR0 INTERRUPT SPECIFICALLY 
+    SECOND_COUNTER = 1
+    SAMPLE_NUM = 1
+    TEMP_REMOTE_FLAG = 0
+    
+'BEGINNING OF DATA SAMPLING*************    
+    OUTPUT UART_TX                                   'SET PIC'S UART TX PIN TO OUTPUT SO IT CAN BE USED TO MONITOR INTERRUPT TIMING
+ENABLE
+    T0CON = T0CON_CONFIG_DATA                       'ENABLES TIMER0, SETS AS 16-BIT, SET CLKOUT (T0CKI PIN) AS SOURCE, 
+                                                    'INCREMENT ON RISING EDGE OF T0CKI PIN, ASSIGN PRESCALER DETERMINED IN
+                                                    '"INIT_TMR0_VARS"
+    
+    INT_EN_FLAG = 1
+    IF REMOTE_FLAG == 1 THEN
+        WHILE REMOTE_FLAG == 1                      'LOOPS FOR EACH SECOND AS DEFINED BY TEST_DURATION
+            ENABLE
+            WHILE SAMPLE_NUM <= ACCEL_GYRO_SAMPLE_RATE  'EXECUTES FOR EACH SAMPLE THAT NEEDS TO BE TAKEN PER SECOND
+                
+            'CONTROLS 'ON-RELEASE' STOPING OF COLLECTION*************
+                IF RCVR_D0 == 1 && TEMP_REMOTE_FLAG == 1 THEN
+                    goto STOP_TEST
+                ELSEIF REMOTE_FLAG == 0 && TEMP_REMOTE_FLAG != 1 THEN
+                    TEMP_REMOTE_FLAG = 1
+                endif
+            '********************************************************
+            WEND
+            DISABLE
+            SAMPLE_NUM = 1
+            SECOND_COUNTER = SECOND_COUNTER + 1
+
+CALIBRATION_RED_LED_CONTROL:
+                IF SECOND_COUNTER = 3 THEN          'Turn RED_LED "ON" for 60 seconds
+                    RED_LED = 1
+                    ENDIF
+                IF SECOND_COUNTER = 6 THEN        'Turn RED_LED "OFF" (Stays "OFF" for remainder of test)
+                    RED_LED = 0
+                    ENDIF
+        WEND
+    ELSE
+        WHILE SECOND_COUNTER <= TEST_DURATION           'LOOPS FOR EACH SECOND AS DEFINED BY TEST_DURATION
+            ENABLE
+            WHILE SAMPLE_NUM <= ACCEL_GYRO_SAMPLE_RATE  'EXECUTES FOR EACH SAMPLE THAT NEEDS TO BE TAKEN PER SECOND
+            WEND
+            DISABLE
+            SAMPLE_NUM = 1
+            SECOND_COUNTER = SECOND_COUNTER + 1
+                IF SECOND_COUNTER = 3 THEN
+                    RED_LED = 1
+                    ENDIF
+        WEND
+    ENDIF
+    STOP_TEST:
+    GOSUB DISABLE_TMR0
+DISABLE  'DISABLES INTERRUPTS UNTIL AN "ENABLE" KEYWORD IS ENCOUNTERED
+    INPUT UART_TX                                                                'PIC'S UART TX PIN (CONNECTS TO PC'S RX PIN); must be configured as INPUT when not in use
+'END OF DATA SAMPLING********************
+    
+    
+    BYTES_LEFT_IN_SECTOR = 511 - (WRITE_ADDR_L // 512)                           'CALCULATES HOW MANY EMPTY BYTES ARE LEFT IN THE CURRENT SECTOR
+    WRITE_ADDR_L = WRITE_ADDR_L + BYTES_LEFT_IN_SECTOR                           'INCREMENT THE WRITE_ADDR_L TO THE END OF THE CURRENT SECTOR
+    IF WRITE_ADDR_L == 65535 THEN                                                'EXECUTES IF THE END OF THE CURRENT SECTOR IS ABOUT TO OVERFLOW THE WRITE_ADDR_L
+       WRITE_ADDR_L = 0                                                          'RESET THE LOW WORD OF THE WRITE ADDRESS
+       WRITE_ADDR_H = WRITE_ADDR_H + 1                                           'INCREMENT THE HIGH ADDRESS BY 1 (MOVE TO THE BEGINNING OF THE NEXT SECTOR)
+    ELSE                                                                         'EXECUTES IF THE WRITE_ADDR_L IS NOT ABOUT TO OVERFLOW
+       WRITE_ADDR_L = WRITE_ADDR_L + 1                                           'MOVE TO THE BEGINNING OF THE NEXT SECTOR
+    ENDIF
+    
+    PAUSE 10
+    GOSUB STORE_METADATA            'STORE THE CURRENT WRITE ADDRESS IN THE METADATA SECTOR SO THE PROGRAM CAN LATER DETERMINE WHERE THE DATA FOR THIS TEST WAS STORED
+    PAUSE 10
+    
+    RED_LED = 0                                                                  'TURN THE RED LED OFF TO NOTIFY THE USER THAT THE TEST IS COMPLETE
+return   
+     
+
+'INTERRUPT HANDLER******************************************************************************************************
+
+disable                             'DISABLES INTERRUPTS SO THE FOLLOWING OPERATION CANNOT BE INTERRUPTED UNTIL "ENABLE" IS CALLED
+SAMPLE_DATA:                            'THIS IS THE INTERRUPT HANDLER SUBROUTINE
+    TMR0H = (65535 - TMR0_TICK_THRESHOLD) / 256     'SET HIGH BYTE OF TMR0 VALUE SO IT OVERFLOWS AT THE DESIRED PERIOD
+    TMR0L = (65535 - TMR0_TICK_THRESHOLD) // 256    'SET LOW BYTE OF TMR0 VALUE SO IT OVERFLOWS AT THE DESIRED PERIOD
+    INTCON.2 = 0                                    'RESET TMR0 OVERFLOW INTERRUPT
+    
+    
+    IF RCVR_D0 == 1 AND SECOND_COUNTER > 2 THEN
+        GOSUB PROCESS_RCVR_D0
+        REMOTE_FLAG = 0
+    ENDIF
+    IF INIT_FLAG == 1 AND INT_EN_FLAG == 1 THEN
+        'TOGGLE PIN TO 
+        UART_TX = 1
+        'UART_TX = 0   
+    
+        'DEBUG
+        'TX_BYTE = SAMPLE_NUM.BYTE1
+        'GOSUB TX_HEX_BYTE_115200
+        'TX_BYTE = SAMPLE_NUM.BYTE0
+        'GOSUB TX_HEX_BYTE_115200
+        '    
+        'TX_DATA = 58                    'COLON
+        'gosub UART_TX_VAR_115200
+        '    
+        'TX_BYTE = WRITE_ADDR_H.BYTE1
+        'GOSUB TX_HEX_BYTE_115200
+        'TX_BYTE = WRITE_ADDR_H.BYTE0
+        'GOSUB TX_HEX_BYTE_115200
+        'TX_BYTE = WRITE_ADDR_L.BYTE1
+        'GOSUB TX_HEX_BYTE_115200
+        'TX_BYTE = WRITE_ADDR_L.BYTE0
+        'GOSUB TX_HEX_BYTE_115200
+        'GOSUB UART_CRLF
+      
+        IF (SAMPLE_NUM // (ACCEL_GYRO_SAMPLE_RATE/MAG_SAMPLE_RATE)) == 1 OR (ACCEL_GYRO_SAMPLE_RATE ==  MAG_SAMPLE_RATE) THEN 'EXECUTES IF THE MAG SHOULD BE READ ON THIS SAMPLE (CALCULATION BASED ON MAG INTERVAL)
+            'ACCELEROMETER--------------------------------------------------------------------------------------------------    
+            
+                'START COMMAND                   
+                SSP2CON2.0 = 1                     'SET BIT TO ISSUE START COMMAND
+                while SSP2CON2.0 == 1              'LOOP UNTIL THE START IS ISSUED AND THE MSSP MODULE AUTOMATICALLY CLEARS THE BIT
+                wend                               'ISSUE A START COMMAND ON THE I2C BUS
+                
+                'SENDING SLAVE WRITE ADDRESS/REGISTER ADDRESS
+                SSP2BUF = MPU_ADDR_W               'SEND THE MPU WRITE ADDRESS ON THE I2C BUS
+                while SSP2STAT.0 == 1              'LOOP UNTIL THE DATA IS SENT
+                WEND
+                PAUSEUS 2                          'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP2BUF = ACCEL_XOUT_H_ADDR        'SEND THE FIRST ACCEL REGISTER ADDRESS ON THE I2C BUS (ADDRESS WILL AUTOINCREMENT WHEN BLOCK READING)
+                while SSP2STAT.0 == 1              'LOOP UNTIL THE DATA IS SENT
+                WEND
+                PAUSEUS 2                          'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                
+                'START COMMAND
+                SSP2CON2.0 = 1                      'SET BIT TO ISSUE START COMMAND
+                while SSP2CON2.0 == 1               'LOOP UNTIL THE START IS ISSUED AND THE MSSP MODULE AUTOMATICALLY CLEARS THE BIT
+                wend 
+                
+                'SLAVE READ ADDRESS FOLLOWED BY DATA SAMPLING
+                SSP2BUF = MPU_ADDR_r               'SEND THE MPU WRITE ADDRESS ON THE I2C BUS
+                while SSP2STAT.0 == 1              'LOOP UNTIL THE DATA IS SENT
+                WEND
+                PAUSEUS 2                          'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP2CON2.3 = 1                     'SET THE PIC FOR I2C RECEIVER MODE TO SHIFT IN 1 BYTE AND STORE IT IN THE SSP2BUF
+                WHILE SSP2STAT.0 == 0              'LOOP UNTIL THE DATA IS RECEIVED
+                WEND
+                SSP2CON2.4 = 1                     'SEND AN ACKNOWLEDGE CLOCK CYCLE
+                SSP2CON2.5 = 0                     'TELL THE PIC TO ACKNOWLEDGE ON THE ACKNOWLEDGE CLOCK CYCLE SO THE MPU KNOWS TO SEND MORE DATA
+                RAW_ACCEL_XOUT.BYTE1 = SSP2BUF     'STORE THE RECEIEVED DATA
+                PAUSEUS 5                          'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP2CON2.3 = 1                     'SET THE PIC FOR I2C RECEIVER MODE TO SHIFT IN 1 BYTE AND STORE IT IN THE SSP2BUF
+                WHILE SSP2STAT.0 == 0              'LOOP UNTIL THE DATA IS RECEIVED
+                WEND
+                SSP2CON2.4 = 1                     'SEND AN ACKNOWLEDGE CLOCK CYCLE
+                SSP2CON2.5 = 0                     'TELL THE PIC TO ACKNOWLEDGE ON THE ACKNOWLEDGE CLOCK CYCLE SO THE MPU KNOWS TO SEND MORE DATA
+                RAW_ACCEL_XOUT.BYTE0 = SSP2BUF     'STORE THE RECEIEVED DATA
+                PAUSEUS 5                          'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP2CON2.3 = 1                     'SET THE PIC FOR I2C RECEIVER MODE TO SHIFT IN 1 BYTE AND STORE IT IN THE SSP2BUF
+                WHILE SSP2STAT.0 == 0              'LOOP UNTIL THE DATA IS RECEIVED
+                WEND
+                SSP2CON2.4 = 1                     'SEND AN ACKNOWLEDGE CLOCK CYCLE
+                SSP2CON2.5 = 0                     'TELL THE PIC TO ACKNOWLEDGE ON THE ACKNOWLEDGE CLOCK CYCLE SO THE MPU KNOWS TO SEND MORE DATA
+                RAW_ACCEL_YOUT.BYTE1 = SSP2BUF     'STORE THE RECEIEVED DATA
+                PAUSEUS 5                          'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP2CON2.3 = 1                     'SET THE PIC FOR I2C RECEIVER MODE TO SHIFT IN 1 BYTE AND STORE IT IN THE SSP2BUF
+                WHILE SSP2STAT.0 == 0              'LOOP UNTIL THE DATA IS RECEIVED
+                WEND
+                SSP2CON2.4 = 1                     'SEND AN ACKNOWLEDGE CLOCK CYCLE
+                SSP2CON2.5 = 0                     'TELL THE PIC TO ACKNOWLEDGE ON THE ACKNOWLEDGE CLOCK CYCLE SO THE MPU KNOWS TO SEND MORE DATA
+                RAW_ACCEL_YOUT.BYTE0 = SSP2BUF     'STORE THE RECEIEVED DATA
+                PAUSEUS 5                          'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP2CON2.3 = 1                     'SET THE PIC FOR I2C RECEIVER MODE TO SHIFT IN 1 BYTE AND STORE IT IN THE SSP2BUF
+                WHILE SSP2STAT.0 == 0              'LOOP UNTIL THE DATA IS RECEIVED
+                WEND
+                SSP2CON2.4 = 1                     'SEND AN ACKNOWLEDGE CLOCK CYCLE
+                SSP2CON2.5 = 0                     'TELL THE PIC TO ACKNOWLEDGE ON THE ACKNOWLEDGE CLOCK CYCLE SO THE MPU KNOWS TO SEND MORE DATA
+                RAW_ACCEL_ZOUT.BYTE1 = SSP2BUF     'STORE THE RECEIEVED DATA
+                PAUSEUS 5                          'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP2CON2.3 = 1                     'SET THE PIC FOR I2C RECEIVER MODE TO SHIFT IN 1 BYTE AND STORE IT IN THE SSP2BUF
+                WHILE SSP2STAT.0 == 0              'LOOP UNTIL THE DATA IS RECEIVED
+                WEND
+                SSP2CON2.4 = 1                     'SEND AN ACKNOWLEDGE CLOCK CYCLE
+                SSP2CON2.5 = 1                     'TELL THE PIC TO NOT ACKNOWLEDGE ON THE ACKNOWLEDGE CLOCK CYCLE SO THE MPU KNOWS TO NOT SEND ANYMORE DATA
+                RAW_ACCEL_ZOUT.BYTE0 = SSP2BUF     'STORE THE RECEIEVED DATA
+                PAUSEUS 3                          'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+    
+                'STOP COMMAND
+                SSP2CON2.2 = 1                      'SET BIT TO ISSUE STOP COMMAND
+                while SSP2CON2.2 == 1               'LOOP UNTIL THE STOP IS ISSUED AND THE MSSP MODULE AUTOMATICALLY CLEARS THE BIT
+                wend
+                PAUSEUS 3                           'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+            
+            
+            'GYROSCOPE--------------------------------------------------------------------------------------------------    
+            
+                'START COMMAND                   
+                SSP2CON2.0 = 1                     'SET BIT TO ISSUE START COMMAND
+                while SSP2CON2.0 == 1              'LOOP UNTIL THE START IS ISSUED AND THE MSSP MODULE AUTOMATICALLY CLEARS THE BIT
+                wend                               'ISSUE A START COMMAND ON THE I2C BUS
+                
+                'SENDING SLAVE WRITE ADDRESS/REGISTER ADDRESS
+                SSP2BUF = MPU_ADDR_W               'SEND THE MPU WRITE ADDRESS ON THE I2C BUS
+                while SSP2STAT.0 == 1              'LOOP UNTIL THE DATA IS SENT
+                WEND
+                PAUSEUS 2                          'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP2BUF = GYRO_XOUT_H_ADDR         'SEND THE FIRST GYRO REGISTER ADDRESS ON THE I2C BUS (ADDRESS WILL AUTOINCREMENT WHEN BLOCK READING)
+                while SSP2STAT.0 == 1              'LOOP UNTIL THE DATA IS SENT
+                WEND
+                PAUSEUS 2                          'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                
+                'START COMMAND
+                SSP2CON2.0 = 1                      'SET BIT TO ISSUE START COMMAND
+                while SSP2CON2.0 == 1               'LOOP UNTIL THE START IS ISSUED AND THE MSSP MODULE AUTOMATICALLY CLEARS THE BIT
+                wend 
+                
+                'SLAVE READ ADDRESS FOLLOWED BY DATA SAMPLING
+                SSP2BUF = MPU_ADDR_r               'SEND THE MPU WRITE ADDRESS ON THE I2C BUS
+                while SSP2STAT.0 == 1              'LOOP UNTIL THE DATA IS SENT
+                WEND
+                PAUSEUS 2                          'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP2CON2.3 = 1                     'SET THE PIC FOR I2C RECEIVER MODE TO SHIFT IN 1 BYTE AND STORE IT IN THE SSP2BUF
+                WHILE SSP2STAT.0 == 0              'LOOP UNTIL THE DATA IS RECEIVED
+                WEND
+                SSP2CON2.4 = 1                     'SEND AN ACKNOWLEDGE CLOCK CYCLE
+                SSP2CON2.5 = 0                     'TELL THE PIC TO ACKNOWLEDGE ON THE ACKNOWLEDGE CLOCK CYCLE SO THE MPU KNOWS TO SEND MORE DATA
+                RAW_GYRO_XOUT.BYTE1 = SSP2BUF      'STORE THE RECEIEVED DATA
+                PAUSEUS 5                          'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP2CON2.3 = 1                     'SET THE PIC FOR I2C RECEIVER MODE TO SHIFT IN 1 BYTE AND STORE IT IN THE SSP2BUF
+                WHILE SSP2STAT.0 == 0              'LOOP UNTIL THE DATA IS RECEIVED
+                WEND
+                SSP2CON2.4 = 1                     'SEND AN ACKNOWLEDGE CLOCK CYCLE
+                SSP2CON2.5 = 0                     'TELL THE PIC TO ACKNOWLEDGE ON THE ACKNOWLEDGE CLOCK CYCLE SO THE MPU KNOWS TO SEND MORE DATA
+                RAW_GYRO_XOUT.BYTE0 = SSP2BUF      'STORE THE RECEIEVED DATA
+                PAUSEUS 5                          'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP2CON2.3 = 1                     'SET THE PIC FOR I2C RECEIVER MODE TO SHIFT IN 1 BYTE AND STORE IT IN THE SSP2BUF
+                WHILE SSP2STAT.0 == 0              'LOOP UNTIL THE DATA IS RECEIVED
+                WEND
+                SSP2CON2.4 = 1                     'SEND AN ACKNOWLEDGE CLOCK CYCLE
+                SSP2CON2.5 = 0                     'TELL THE PIC TO ACKNOWLEDGE ON THE ACKNOWLEDGE CLOCK CYCLE SO THE MPU KNOWS TO SEND MORE DATA
+                RAW_GYRO_YOUT.BYTE1 = SSP2BUF      'STORE THE RECEIEVED DATA
+                PAUSEUS 5                          'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP2CON2.3 = 1                     'SET THE PIC FOR I2C RECEIVER MODE TO SHIFT IN 1 BYTE AND STORE IT IN THE SSP2BUF
+                WHILE SSP2STAT.0 == 0              'LOOP UNTIL THE DATA IS RECEIVED
+                WEND
+                SSP2CON2.4 = 1                     'SEND AN ACKNOWLEDGE CLOCK CYCLE
+                SSP2CON2.5 = 0                     'TELL THE PIC TO ACKNOWLEDGE ON THE ACKNOWLEDGE CLOCK CYCLE SO THE MPU KNOWS TO SEND MORE DATA
+                RAW_GYRO_YOUT.BYTE0 = SSP2BUF      'STORE THE RECEIEVED DATA
+                PAUSEUS 5                          'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP2CON2.3 = 1                     'SET THE PIC FOR I2C RECEIVER MODE TO SHIFT IN 1 BYTE AND STORE IT IN THE SSP2BUF
+                WHILE SSP2STAT.0 == 0              'LOOP UNTIL THE DATA IS RECEIVED
+                WEND
+                SSP2CON2.4 = 1                     'SEND AN ACKNOWLEDGE CLOCK CYCLE
+                SSP2CON2.5 = 0                     'TELL THE PIC TO ACKNOWLEDGE ON THE ACKNOWLEDGE CLOCK CYCLE SO THE MPU KNOWS TO SEND MORE DATA
+                RAW_GYRO_ZOUT.BYTE1 = SSP2BUF      'STORE THE RECEIEVED DATA
+                PAUSEUS 5                          'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP2CON2.3 = 1                     'SET THE PIC FOR I2C RECEIVER MODE TO SHIFT IN 1 BYTE AND STORE IT IN THE SSP2BUF
+                WHILE SSP2STAT.0 == 0              'LOOP UNTIL THE DATA IS RECEIVED
+                WEND
+                SSP2CON2.4 = 1                     'SEND AN ACKNOWLEDGE CLOCK CYCLE
+                SSP2CON2.5 = 1                     'TELL THE PIC TO NOT ACKNOWLEDGE ON THE ACKNOWLEDGE CLOCK CYCLE SO THE MPU KNOWS TO NOT SEND ANYMORE DATA
+                RAW_GYRO_ZOUT.BYTE0 = SSP2BUF      'STORE THE RECEIEVED DATA
+                PAUSEUS 3                          'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+        
+                'STOP COMMAND
+                SSP2CON2.2 = 1                      'SET BIT TO ISSUE STOP COMMAND
+                while SSP2CON2.2 == 1               'LOOP UNTIL THE STOP IS ISSUED AND THE MSSP MODULE AUTOMATICALLY CLEARS THE BIT
+                wend
+                PAUSEUS 3                           'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+            
+            'MAGNETOMETER---------------------------------------------------------------------------------------------------
+            
+                'START COMMAND
+                SSP2CON2.0 = 1                      'SET BIT TO ISSUE START COMMAND
+                while SSP2CON2.0 == 1               'LOOP UNTIL THE START IS ISSUED AND THE MSSP MODULE AUTOMATICALLY CLEARS THE BIT
+                wend 
+                
+                'SENDING SLAVE WRITE ADDRESS/REGISTER ADDRESS
+                SSP2BUF = MAG_ADDR_W
+                while SSP2STAT.0 == 1              'LOOP UNTIL THE DATA IS SENT
+                WEND
+                PAUSEUS 2                          'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP2BUF = MAG_XOUT_L_ADDR          'SEND THE FIRST MAG REGISTER ADDRESS ON THE I2C BUS (ADDRESS WILL AUTOINCREMENT WHEN BLOCK READING)
+                while SSP2STAT.0 == 1              'LOOP UNTIL THE DATA IS SENT
+                WEND
+                PAUSEUS 2                          'PAUSE REQUIRED TO ENSURE PREVIOUS INSTRUCTION FULLY EXECUTED
+                
+                'START COMMAND
+                SSP2CON2.0 = 1                      'SET BIT TO ISSUE START COMMAND
+                while SSP2CON2.0 == 1               'LOOP UNTIL THE START IS ISSUED AND THE MSSP MODULE AUTOMATICALLY CLEARS THE BIT
+                wend 
+                
+                'SLAVE READ ADDRESS FOLLOWED BY DATA SAMPLING
+                SSP2BUF = MAG_ADDR_R
+                while SSP2STAT.0 == 1              'LOOP UNTIL THE DATA IS SENT
+                WEND
+                PAUSEUS 2                          'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP2CON2.3 = 1                     'SET THE PIC FOR I2C RECEIVER MODE TO SHIFT IN 1 BYTE AND STORE IT IN THE SSP2BUF
+                WHILE SSP2STAT.0 == 0              'LOOP UNTIL THE DATA IS RECEIVED
+                WEND
+                SSP2CON2.4 = 1                     'SEND AN ACKNOWLEDGE CLOCK CYCLE
+                SSP2CON2.5 = 0                     'TELL THE PIC TO ACKNOWLEDGE ON THE ACKNOWLEDGE CLOCK CYCLE SO THE MPU KNOWS TO SEND MORE DATA
+                RAW_MAG_XOUT.BYTE0 = SSP2BUF       'STORE THE RECEIEVED DATA
+                PAUSEUS 5                          'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP2CON2.3 = 1                     'SET THE PIC FOR I2C RECEIVER MODE TO SHIFT IN 1 BYTE AND STORE IT IN THE SSP2BUF
+                WHILE SSP2STAT.0 == 0              'LOOP UNTIL THE DATA IS RECEIVED
+                WEND
+                SSP2CON2.4 = 1                     'SEND AN ACKNOWLEDGE CLOCK CYCLE
+                SSP2CON2.5 = 0                     'TELL THE PIC TO ACKNOWLEDGE ON THE ACKNOWLEDGE CLOCK CYCLE SO THE MPU KNOWS TO SEND MORE DATA
+                RAW_MAG_XOUT.BYTE1 = SSP2BUF       'STORE THE RECEIEVED DATA
+                PAUSEUS 5                          'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP2CON2.3 = 1                     'SET THE PIC FOR I2C RECEIVER MODE TO SHIFT IN 1 BYTE AND STORE IT IN THE SSP2BUF
+                WHILE SSP2STAT.0 == 0              'LOOP UNTIL THE DATA IS RECEIVED
+                WEND
+                SSP2CON2.4 = 1                     'SEND AN ACKNOWLEDGE CLOCK CYCLE
+                SSP2CON2.5 = 0                     'TELL THE PIC TO ACKNOWLEDGE ON THE ACKNOWLEDGE CLOCK CYCLE SO THE MPU KNOWS TO SEND MORE DATA
+                RAW_MAG_YOUT.BYTE0 = SSP2BUF       'STORE THE RECEIEVED DATA
+                PAUSEUS 5                          'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP2CON2.3 = 1                     'SET THE PIC FOR I2C RECEIVER MODE TO SHIFT IN 1 BYTE AND STORE IT IN THE SSP2BUF
+                WHILE SSP2STAT.0 == 0              'LOOP UNTIL THE DATA IS RECEIVED
+                WEND
+                SSP2CON2.4 = 1                     'SEND AN ACKNOWLEDGE CLOCK CYCLE
+                SSP2CON2.5 = 0                     'TELL THE PIC TO ACKNOWLEDGE ON THE ACKNOWLEDGE CLOCK CYCLE SO THE MPU KNOWS TO SEND MORE DATA
+                RAW_MAG_YOUT.BYTE1 = SSP2BUF       'STORE THE RECEIEVED DATA
+                PAUSEUS 5                          'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP2CON2.3 = 1                     'SET THE PIC FOR I2C RECEIVER MODE TO SHIFT IN 1 BYTE AND STORE IT IN THE SSP2BUF
+                WHILE SSP2STAT.0 == 0              'LOOP UNTIL THE DATA IS RECEIVED
+                WEND
+                SSP2CON2.4 = 1                     'SEND AN ACKNOWLEDGE CLOCK CYCLE
+                SSP2CON2.5 = 0                     'TELL THE PIC TO ACKNOWLEDGE ON THE ACKNOWLEDGE CLOCK CYCLE SO THE MPU KNOWS TO SEND MORE DATA
+                RAW_MAG_ZOUT.BYTE0 = SSP2BUF       'STORE THE RECEIEVED DATA
+                PAUSEUS 5                          'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP2CON2.3 = 1                     'SET THE PIC FOR I2C RECEIVER MODE TO SHIFT IN 1 BYTE AND STORE IT IN THE SSP2BUF
+                WHILE SSP2STAT.0 == 0              'LOOP UNTIL THE DATA IS RECEIVED
+                WEND
+                SSP2CON2.4 = 1                     'SEND AN ACKNOWLEDGE CLOCK CYCLE
+                SSP2CON2.5 = 1                     'TELL THE PIC TO NOT ACKNOWLEDGE ON THE ACKNOWLEDGE CLOCK CYCLE SO THE MPU KNOWS TO NOT SEND ANYMORE DATA
+                RAW_MAG_ZOUT.BYTE1 = SSP2BUF       'STORE THE RECEIEVED DATA
+                PAUSEUS 3                          'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                
+                'STOP COMMAND
+                SSP2CON2.2 = 1                      'SET BIT TO ISSUE STOP COMMAND
+                while SSP2CON2.2 == 1               'LOOP UNTIL THE STOP IS ISSUED AND THE MSSP MODULE AUTOMATICALLY CLEARS THE BIT
+                wend
+                PAUSEUS 3                           'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+            
+            'TELL MAG TO TAKE NEW READING-----------------------------------------------------------------------------------
+                I2C_SLAVE_W_ADDR = MAG_ADDR_W
+                I2C_REG_ADDR = CNTL1_ADDR
+                I2C_DATA = CNTL1_CONFIG_DATA
+                
+                'START COMMAND
+                SSP2CON2.0 = 1                      'SET BIT TO ISSUE START COMMAND
+                while SSP2CON2.0 == 1               'LOOP UNTIL THE START IS ISSUED AND THE MSSP MODULE AUTOMATICALLY CLEARS THE BIT
+                wend 
+                
+                'WRITE THE VALUE OF I2C_DATA TO MPU-9250
+                SSP2BUF = I2C_SLAVE_W_ADDR   'SEND THE PASSED IN I2C SLAVE WRITE ADDRESS ON THE I2C BUS
+                while SSP2STAT.0 == 1        'LOOP UNTIL THE DATA IS SENT
+                WEND
+                PAUSEUS 2                    'PAUSE TO ENSURE DATA IS FULLY SENT (ANOMALY)
+                SSP2BUF = I2C_REG_ADDR       'SEND THE PASSED IN REGISTER ADDRESS ON THE I2C BUS
+                while SSP2STAT.0 == 1        'LOOP UNTIL THE DATA IS SENT
+                WEND
+                PAUSEUS 2                    'PAUSE TO ENSURE DATA IS FULLY SENT (ANOMALY)
+                SSP2BUF = I2C_DATA           'SEND THE PASSED IN DATA ON THE I2C BUS
+                PAUSEUS 1                    'PAUSE TO ENSURE DATA TRANSMISSION FLAG IS SET (ANOMALY)
+                while SSP2STAT.0 == 1        'LOOP UNTIL THE DATA IS SENT
+                WEND                         
+                PAUSEUS 2                    'PAUSE TO ENSURE DATA IS FULLY SENT (ANOMALY)
+                
+                'STOP COMMAND
+                SSP2CON2.2 = 1                      'SET BIT TO ISSUE STOP COMMAND
+                while SSP2CON2.2 == 1               'LOOP UNTIL THE STOP IS ISSUED AND THE MSSP MODULE AUTOMATICALLY CLEARS THE BIT
+                wend
+                PAUSEUS 3                           'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+            
+            'WRITE 9-AXIS TO FLASH******************************************************************************************
+                'GOSUB INIT_SPI
+                FLASH_CS = 0                    'CS GOES LOW TO START A SEQUENCE
+                SSP1BUF = WRITE_ENABLE_CMD      'SEND THE WRITE ENABLE COMMAND ON THE SPI BUS
+                PAUSEUS 1                       'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                FLASH_CS = 1                    'CS GOES HIGH TO END A SEQUENCE
+                PAUSEUS 1                       'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                FLASH_CS = 0                    'CS GOES LOW TO START A SEQUENCE                        
+                SSP1BUF = PP_4B_ADDR_CMD        'SEND THE BLOCK WRITE, 4 BYTE ADDRESS COMMAND ON THE SPI BUS
+                PAUSEUS 1                       'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP1BUF = WRITE_ADDR_H.byte1    'SEND 1 BYTE OF THE DESIRED WRITE ADDRESS TO THE FLASH MEMORY
+                PAUSEUS 1                       'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP1BUF = WRITE_ADDR_H.byte0    'SEND 1 BYTE OF THE DESIRED WRITE ADDRESS TO THE FLASH MEMORY
+                PAUSEUS 1                       'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP1BUF = WRITE_ADDR_L.byte1    'SEND 1 BYTE OF THE DESIRED WRITE ADDRESS TO THE FLASH MEMORY
+                PAUSEUS 1                       'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP1BUF = WRITE_ADDR_L.byte0    'SEND 1 BYTE OF THE DESIRED WRITE ADDRESS TO THE FLASH MEMORY
+                PAUSEUS 1                       'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                
+                'ACCELEROMETER
+                SSP1BUF = RAW_ACCEL_XOUT.byte1  'SEND 1 BYTE TO THE FLASH MEMORY
+                PAUSEUS 1                       'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP1BUF = RAW_ACCEL_XOUT.byte0  'SEND 1 BYTE TO THE FLASH MEMORY
+                PAUSEUS 1                       'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP1BUF = RAW_ACCEL_YOUT.byte1  'SEND 1 BYTE TO THE FLASH MEMORY
+                PAUSEUS 1                       'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP1BUF = RAW_ACCEL_YOUT.byte0  'SEND 1 BYTE TO THE FLASH MEMORY
+                PAUSEUS 1                       'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP1BUF = RAW_ACCEL_ZOUT.byte1  'SEND 1 BYTE TO THE FLASH MEMORY
+                PAUSEUS 1                       'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP1BUF = RAW_ACCEL_ZOUT.byte0  'SEND 1 BYTE TO THE FLASH MEMORY
+                PAUSEUS 1                       'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                
+                'GYROSCOPE
+                SSP1BUF = RAW_GYRO_XOUT.byte1   'SEND 1 BYTE TO THE FLASH MEMORY
+                PAUSEUS 1                       'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP1BUF = RAW_GYRO_XOUT.byte0   'SEND 1 BYTE TO THE FLASH MEMORY
+                PAUSEUS 1                       'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP1BUF = RAW_GYRO_YOUT.byte1   'SEND 1 BYTE TO THE FLASH MEMORY
+                PAUSEUS 1                       'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP1BUF = RAW_GYRO_YOUT.byte0   'SEND 1 BYTE TO THE FLASH MEMORY
+                PAUSEUS 1                       'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP1BUF = RAW_GYRO_ZOUT.byte1   'SEND 1 BYTE TO THE FLASH MEMORY
+                PAUSEUS 1                       'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP1BUF = RAW_GYRO_ZOUT.byte0   'SEND 1 BYTE TO THE FLASH MEMORY
+                PAUSEUS 1                       'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                
+                'MAGNETOMETER
+                SSP1BUF = RAW_MAG_XOUT.byte1    'SEND 1 BYTE TO THE FLASH MEMORY
+                PAUSEUS 1                       'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP1BUF = RAW_MAG_XOUT.byte0    'SEND 1 BYTE TO THE FLASH MEMORY
+                PAUSEUS 1                       'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP1BUF = RAW_MAG_YOUT.byte1    'SEND 1 BYTE TO THE FLASH MEMORY
+                PAUSEUS 1                       'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP1BUF = RAW_MAG_YOUT.byte0    'SEND 1 BYTE TO THE FLASH MEMORY
+                PAUSEUS 1                       'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP1BUF = RAW_MAG_ZOUT.byte1    'SEND 1 BYTE TO THE FLASH MEMORY
+                PAUSEUS 1                       'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP1BUF = RAW_MAG_ZOUT.byte0    'SEND 1 BYTE TO THE FLASH MEMORY
+                PAUSEUS 1                       'PAUSE TO ALLOW PREVIOUS INSTRUCITON TO FULLY EXECUTE
+                FLASH_CS = 1                    'CS GOES HIGH TO END A SEQUENCE                       
+                
+                if WRITE_ADDR_L + 18 == 65528 then
+                    WRITE_ADDR_H = WRITE_ADDR_H + 1
+                    WRITE_ADDR_L = 0
+                elseif (WRITE_ADDR_L + 18) // 512 == 504 then
+                    WRITE_ADDR_L = WRITE_ADDR_L + 8 + 18
+                else
+                    WRITE_ADDR_L = WRITE_ADDR_L + 18'ADD 18 TO THE WRITE ADDRESS SINCE 18 BYTES WERE JUST WRITTEN TO THE FLASH
+                    endif
+        
+        ELSE                                     'EXECUTES IF ONLY THE ACCEL/GYRO SHOULD BE READ ON THIS SAMPLE
+            'READ 6-AXIS  FROM MPU-9250*************************************************************************************
+            'ACCELEROMETER--------------------------------------------------------------------------------------------------    
+            
+                'START COMMAND                   
+                SSP2CON2.0 = 1                     'SET BIT TO ISSUE START COMMAND
+                while SSP2CON2.0 == 1              'LOOP UNTIL THE START IS ISSUED AND THE MSSP MODULE AUTOMATICALLY CLEARS THE BIT
+                wend                               'ISSUE A START COMMAND ON THE I2C BUS
+                
+                'SENDING SLAVE WRITE ADDRESS/REGISTER ADDRESS
+                SSP2BUF = MPU_ADDR_W               'SEND THE MPU WRITE ADDRESS ON THE I2C BUS
+                while SSP2STAT.0 == 1              'LOOP UNTIL THE DATA IS SENT
+                WEND
+                PAUSEUS 2                          'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP2BUF = ACCEL_XOUT_H_ADDR        'SEND THE FIRST ACCEL REGISTER ADDRESS ON THE I2C BUS (ADDRESS WILL AUTOINCREMENT WHEN BLOCK READING)
+                while SSP2STAT.0 == 1              'LOOP UNTIL THE DATA IS SENT
+                WEND
+                PAUSEUS 2                          'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                
+                'START COMMAND
+                SSP2CON2.0 = 1                      'SET BIT TO ISSUE START COMMAND
+                while SSP2CON2.0 == 1               'LOOP UNTIL THE START IS ISSUED AND THE MSSP MODULE AUTOMATICALLY CLEARS THE BIT
+                wend 
+                
+                'SLAVE READ ADDRESS FOLLOWED BY DATA SAMPLING
+                SSP2BUF = MPU_ADDR_r               'SEND THE MPU WRITE ADDRESS ON THE I2C BUS
+                while SSP2STAT.0 == 1              'LOOP UNTIL THE DATA IS SENT
+                WEND
+                PAUSEUS 2                          'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP2CON2.3 = 1                     'SET THE PIC FOR I2C RECEIVER MODE TO SHIFT IN 1 BYTE AND STORE IT IN THE SSP2BUF
+                WHILE SSP2STAT.0 == 0              'LOOP UNTIL THE DATA IS RECEIVED
+                WEND
+                SSP2CON2.4 = 1                     'SEND AN ACKNOWLEDGE CLOCK CYCLE
+                SSP2CON2.5 = 0                     'TELL THE PIC TO ACKNOWLEDGE ON THE ACKNOWLEDGE CLOCK CYCLE SO THE MPU KNOWS TO SEND MORE DATA
+                RAW_ACCEL_XOUT.BYTE1 = SSP2BUF     'STORE THE RECEIEVED DATA
+                PAUSEUS 5                          'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP2CON2.3 = 1                     'SET THE PIC FOR I2C RECEIVER MODE TO SHIFT IN 1 BYTE AND STORE IT IN THE SSP2BUF
+                WHILE SSP2STAT.0 == 0              'LOOP UNTIL THE DATA IS RECEIVED
+                WEND
+                SSP2CON2.4 = 1                     'SEND AN ACKNOWLEDGE CLOCK CYCLE
+                SSP2CON2.5 = 0                     'TELL THE PIC TO ACKNOWLEDGE ON THE ACKNOWLEDGE CLOCK CYCLE SO THE MPU KNOWS TO SEND MORE DATA
+                RAW_ACCEL_XOUT.BYTE0 = SSP2BUF     'STORE THE RECEIEVED DATA
+                PAUSEUS 5                          'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP2CON2.3 = 1                     'SET THE PIC FOR I2C RECEIVER MODE TO SHIFT IN 1 BYTE AND STORE IT IN THE SSP2BUF
+                WHILE SSP2STAT.0 == 0              'LOOP UNTIL THE DATA IS RECEIVED
+                WEND
+                SSP2CON2.4 = 1                     'SEND AN ACKNOWLEDGE CLOCK CYCLE
+                SSP2CON2.5 = 0                     'TELL THE PIC TO ACKNOWLEDGE ON THE ACKNOWLEDGE CLOCK CYCLE SO THE MPU KNOWS TO SEND MORE DATA
+                RAW_ACCEL_YOUT.BYTE1 = SSP2BUF     'STORE THE RECEIEVED DATA
+                PAUSEUS 5                          'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP2CON2.3 = 1                     'SET THE PIC FOR I2C RECEIVER MODE TO SHIFT IN 1 BYTE AND STORE IT IN THE SSP2BUF
+                WHILE SSP2STAT.0 == 0              'LOOP UNTIL THE DATA IS RECEIVED
+                WEND
+                SSP2CON2.4 = 1                     'SEND AN ACKNOWLEDGE CLOCK CYCLE
+                SSP2CON2.5 = 0                     'TELL THE PIC TO ACKNOWLEDGE ON THE ACKNOWLEDGE CLOCK CYCLE SO THE MPU KNOWS TO SEND MORE DATA
+                RAW_ACCEL_YOUT.BYTE0 = SSP2BUF     'STORE THE RECEIEVED DATA
+                PAUSEUS 5                          'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP2CON2.3 = 1                     'SET THE PIC FOR I2C RECEIVER MODE TO SHIFT IN 1 BYTE AND STORE IT IN THE SSP2BUF
+                WHILE SSP2STAT.0 == 0              'LOOP UNTIL THE DATA IS RECEIVED
+                WEND
+                SSP2CON2.4 = 1                     'SEND AN ACKNOWLEDGE CLOCK CYCLE
+                SSP2CON2.5 = 0                     'TELL THE PIC TO ACKNOWLEDGE ON THE ACKNOWLEDGE CLOCK CYCLE SO THE MPU KNOWS TO SEND MORE DATA
+                RAW_ACCEL_ZOUT.BYTE1 = SSP2BUF     'STORE THE RECEIEVED DATA
+                PAUSEUS 5                          'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP2CON2.3 = 1                     'SET THE PIC FOR I2C RECEIVER MODE TO SHIFT IN 1 BYTE AND STORE IT IN THE SSP2BUF
+                WHILE SSP2STAT.0 == 0              'LOOP UNTIL THE DATA IS RECEIVED
+                WEND
+                SSP2CON2.4 = 1                     'SEND AN ACKNOWLEDGE CLOCK CYCLE
+                SSP2CON2.5 = 1                     'TELL THE PIC TO NOT ACKNOWLEDGE ON THE ACKNOWLEDGE CLOCK CYCLE SO THE MPU KNOWS TO NOT SEND ANYMORE DATA
+                RAW_ACCEL_ZOUT.BYTE0 = SSP2BUF     'STORE THE RECEIEVED DATA
+                PAUSEUS 3                          'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+    
+                'STOP COMMAND
+                SSP2CON2.2 = 1                      'SET BIT TO ISSUE STOP COMMAND
+                while SSP2CON2.2 == 1               'LOOP UNTIL THE STOP IS ISSUED AND THE MSSP MODULE AUTOMATICALLY CLEARS THE BIT
+                wend
+                PAUSEUS 3                           'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+            
+            
+            'GYROSCOPE--------------------------------------------------------------------------------------------------    
+            
+                'START COMMAND                   
+                SSP2CON2.0 = 1                     'SET BIT TO ISSUE START COMMAND
+                while SSP2CON2.0 == 1              'LOOP UNTIL THE START IS ISSUED AND THE MSSP MODULE AUTOMATICALLY CLEARS THE BIT
+                wend                               'ISSUE A START COMMAND ON THE I2C BUS
+                
+                'SENDING SLAVE WRITE ADDRESS/REGISTER ADDRESS
+                SSP2BUF = MPU_ADDR_W               'SEND THE MPU WRITE ADDRESS ON THE I2C BUS
+                while SSP2STAT.0 == 1              'LOOP UNTIL THE DATA IS SENT
+                WEND
+                PAUSEUS 2                          'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP2BUF = GYRO_XOUT_H_ADDR         'SEND THE FIRST GYRO REGISTER ADDRESS ON THE I2C BUS (ADDRESS WILL AUTOINCREMENT WHEN BLOCK READING)
+                while SSP2STAT.0 == 1              'LOOP UNTIL THE DATA IS SENT
+                WEND
+                PAUSEUS 2                          'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                
+                'START COMMAND
+                SSP2CON2.0 = 1                      'SET BIT TO ISSUE START COMMAND
+                while SSP2CON2.0 == 1               'LOOP UNTIL THE START IS ISSUED AND THE MSSP MODULE AUTOMATICALLY CLEARS THE BIT
+                wend 
+                
+                'SLAVE READ ADDRESS FOLLOWED BY DATA SAMPLING
+                SSP2BUF = MPU_ADDR_r               'SEND THE MPU WRITE ADDRESS ON THE I2C BUS
+                while SSP2STAT.0 == 1              'LOOP UNTIL THE DATA IS SENT
+                WEND
+                PAUSEUS 2                          'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP2CON2.3 = 1                     'SET THE PIC FOR I2C RECEIVER MODE TO SHIFT IN 1 BYTE AND STORE IT IN THE SSP2BUF
+                WHILE SSP2STAT.0 == 0              'LOOP UNTIL THE DATA IS RECEIVED
+                WEND
+                SSP2CON2.4 = 1                     'SEND AN ACKNOWLEDGE CLOCK CYCLE
+                SSP2CON2.5 = 0                     'TELL THE PIC TO ACKNOWLEDGE ON THE ACKNOWLEDGE CLOCK CYCLE SO THE MPU KNOWS TO SEND MORE DATA
+                RAW_GYRO_XOUT.BYTE1 = SSP2BUF      'STORE THE RECEIEVED DATA
+                PAUSEUS 5                          'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP2CON2.3 = 1                     'SET THE PIC FOR I2C RECEIVER MODE TO SHIFT IN 1 BYTE AND STORE IT IN THE SSP2BUF
+                WHILE SSP2STAT.0 == 0              'LOOP UNTIL THE DATA IS RECEIVED
+                WEND
+                SSP2CON2.4 = 1                     'SEND AN ACKNOWLEDGE CLOCK CYCLE
+                SSP2CON2.5 = 0                     'TELL THE PIC TO ACKNOWLEDGE ON THE ACKNOWLEDGE CLOCK CYCLE SO THE MPU KNOWS TO SEND MORE DATA
+                RAW_GYRO_XOUT.BYTE0 = SSP2BUF      'STORE THE RECEIEVED DATA
+                PAUSEUS 5                          'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP2CON2.3 = 1                     'SET THE PIC FOR I2C RECEIVER MODE TO SHIFT IN 1 BYTE AND STORE IT IN THE SSP2BUF
+                WHILE SSP2STAT.0 == 0              'LOOP UNTIL THE DATA IS RECEIVED
+                WEND
+                SSP2CON2.4 = 1                     'SEND AN ACKNOWLEDGE CLOCK CYCLE
+                SSP2CON2.5 = 0                     'TELL THE PIC TO ACKNOWLEDGE ON THE ACKNOWLEDGE CLOCK CYCLE SO THE MPU KNOWS TO SEND MORE DATA
+                RAW_GYRO_YOUT.BYTE1 = SSP2BUF      'STORE THE RECEIEVED DATA
+                PAUSEUS 5                          'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP2CON2.3 = 1                     'SET THE PIC FOR I2C RECEIVER MODE TO SHIFT IN 1 BYTE AND STORE IT IN THE SSP2BUF
+                WHILE SSP2STAT.0 == 0              'LOOP UNTIL THE DATA IS RECEIVED
+                WEND
+                SSP2CON2.4 = 1                     'SEND AN ACKNOWLEDGE CLOCK CYCLE
+                SSP2CON2.5 = 0                     'TELL THE PIC TO ACKNOWLEDGE ON THE ACKNOWLEDGE CLOCK CYCLE SO THE MPU KNOWS TO SEND MORE DATA
+                RAW_GYRO_YOUT.BYTE0 = SSP2BUF      'STORE THE RECEIEVED DATA
+                PAUSEUS 5                          'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP2CON2.3 = 1                     'SET THE PIC FOR I2C RECEIVER MODE TO SHIFT IN 1 BYTE AND STORE IT IN THE SSP2BUF
+                WHILE SSP2STAT.0 == 0              'LOOP UNTIL THE DATA IS RECEIVED
+                WEND
+                SSP2CON2.4 = 1                     'SEND AN ACKNOWLEDGE CLOCK CYCLE
+                SSP2CON2.5 = 0                     'TELL THE PIC TO ACKNOWLEDGE ON THE ACKNOWLEDGE CLOCK CYCLE SO THE MPU KNOWS TO SEND MORE DATA
+                RAW_GYRO_ZOUT.BYTE1 = SSP2BUF      'STORE THE RECEIEVED DATA
+                PAUSEUS 5                          'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP2CON2.3 = 1                     'SET THE PIC FOR I2C RECEIVER MODE TO SHIFT IN 1 BYTE AND STORE IT IN THE SSP2BUF
+                WHILE SSP2STAT.0 == 0              'LOOP UNTIL THE DATA IS RECEIVED
+                WEND
+                SSP2CON2.4 = 1                     'SEND AN ACKNOWLEDGE CLOCK CYCLE
+                SSP2CON2.5 = 1                     'TELL THE PIC TO NOT ACKNOWLEDGE ON THE ACKNOWLEDGE CLOCK CYCLE SO THE MPU KNOWS TO NOT SEND ANYMORE DATA
+                RAW_GYRO_ZOUT.BYTE0 = SSP2BUF      'STORE THE RECEIEVED DATA
+                PAUSEUS 3                          'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+        
+                'STOP COMMAND
+                SSP2CON2.2 = 1                      'SET BIT TO ISSUE STOP COMMAND
+                while SSP2CON2.2 == 1               'LOOP UNTIL THE STOP IS ISSUED AND THE MSSP MODULE AUTOMATICALLY CLEARS THE BIT
+                wend
+                PAUSEUS 3                           'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+            
+            'WRITE 6-AXIS TO FLASH******************************************************************************************
+                FLASH_CS = 0                    'CS GOES LOW TO START A SEQUENCE
+                SSP1BUF = WRITE_ENABLE_CMD      'SEND THE WRITE ENABLE COMMAND ON THE SPI BUS
+                PAUSEUS 1                       'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                FLASH_CS = 1                    'CS GOES HIGH TO END A SEQUENCE
+                PAUSEUS 1                       'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                FLASH_CS = 0                    'CS GOES LOW TO START A SEQUENCE                        
+                SSP1BUF = PP_4B_ADDR_CMD        'SEND THE BLOCK WRITE, 4 BYTE ADDRESS COMMAND ON THE SPI BUS
+                PAUSEUS 1                       'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP1BUF = WRITE_ADDR_H.byte1    'SEND 1 BYTE OF THE DESIRED WRITE ADDRESS TO THE FLASH MEMORY
+                PAUSEUS 1                       'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP1BUF = WRITE_ADDR_H.byte0    'SEND 1 BYTE OF THE DESIRED WRITE ADDRESS TO THE FLASH MEMORY
+                PAUSEUS 1                       'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP1BUF = WRITE_ADDR_L.byte1    'SEND 1 BYTE OF THE DESIRED WRITE ADDRESS TO THE FLASH MEMORY
+                PAUSEUS 1                       'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP1BUF = WRITE_ADDR_L.byte0    'SEND 1 BYTE OF THE DESIRED WRITE ADDRESS TO THE FLASH MEMORY
+                PAUSEUS 1                       'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                
+                'ACCELEROMETER
+                SSP1BUF = RAW_ACCEL_XOUT.byte1  'SEND 1 BYTE TO THE FLASH MEMORY
+                PAUSEUS 1                       'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP1BUF = RAW_ACCEL_XOUT.byte0  'SEND 1 BYTE TO THE FLASH MEMORY
+                PAUSEUS 1                       'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP1BUF = RAW_ACCEL_YOUT.byte1  'SEND 1 BYTE TO THE FLASH MEMORY
+                PAUSEUS 1                       'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP1BUF = RAW_ACCEL_YOUT.byte0  'SEND 1 BYTE TO THE FLASH MEMORY
+                PAUSEUS 1                       'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP1BUF = RAW_ACCEL_ZOUT.byte1  'SEND 1 BYTE TO THE FLASH MEMORY
+                PAUSEUS 1                       'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP1BUF = RAW_ACCEL_ZOUT.byte0  'SEND 1 BYTE TO THE FLASH MEMORY
+                PAUSEUS 1                       'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                
+                'GYROSCOPE
+                SSP1BUF = RAW_GYRO_XOUT.byte1   'SEND 1 BYTE TO THE FLASH MEMORY
+                PAUSEUS 1                       'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP1BUF = RAW_GYRO_XOUT.byte0   'SEND 1 BYTE TO THE FLASH MEMORY
+                PAUSEUS 1                       'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP1BUF = RAW_GYRO_YOUT.byte1   'SEND 1 BYTE TO THE FLASH MEMORY
+                PAUSEUS 1                       'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP1BUF = RAW_GYRO_YOUT.byte0   'SEND 1 BYTE TO THE FLASH MEMORY
+                PAUSEUS 1                       'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP1BUF = RAW_GYRO_ZOUT.byte1   'SEND 1 BYTE TO THE FLASH MEMORY
+                PAUSEUS 1                       'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                SSP1BUF = RAW_GYRO_ZOUT.byte0   'SEND 1 BYTE TO THE FLASH MEMORY
+                PAUSEUS 1                       'PAUSE TO ALLOW PREVIOUS INSTRUCTION TO FULLY EXECUTE
+                
+                FLASH_CS = 1                    'CS GOES HIGH TO END A SEQUENCE 
+                                   
+                if WRITE_ADDR_L + 12 == 65528 then
+                    WRITE_ADDR_H = WRITE_ADDR_H + 1
+                    WRITE_ADDR_L = 0
+                elseif (WRITE_ADDR_L + 12) // 512 == 504 then
+                    WRITE_ADDR_L = WRITE_ADDR_L + 8 + 12
+                else
+                    WRITE_ADDR_L = WRITE_ADDR_L + 12'ADD 12 TO THE WRITE ADDRESS SINCE 12 BYTES WERE JUST WRITTEN TO THE FLASH
+                endif
+        ENDIF
+        UART_TX = 0
+        SAMPLE_NUM = SAMPLE_NUM + 1             'INCREMENT SAMPLE_NUM VARIABLE SO PROGRAM KNOWS THAT A SAMPLE WAS TAKEN 
+    ENDIF
+    resume                                  'SENDS PROGRAM BACK TO WHERE THE INTERRUPT OCCURRED
+enable                                  'ENABLES INTERRUPTS UPON EXITING THE INTERRUPT HANDLER (MUST BE IMMEDIATELY AFTER "RESUME")
+'**************************************************************************************************************************************************************************************
+'LCD SUBROUTINES  -  SERIAL COMMUNICATIONS  -  9600 BAUD RATE          
+
+CLR:												'CLEAR THE ENTIRE LCD
+    IF DATA_OUT_BYPASS=1 THEN BYPASS_CLR
+	OUTPUT DSP
+    SerOut DSP,N9600,[CLRLCD]
+	INPUT DSP
+    PAUSE 10                                        'DELAY ALLOWS FOR FULL RESET
+BYPASS_CLR:
+    Return
+BACKLITEON:											'TURN ON THE LCD BACKLIGHT
+	OUTPUT DSP
+    SerOut DSP,N9600,[LITEON]
+	INPUT DSP
+    Return
+BACKLITEOFF:										'TURN OFF THE LCD BACKLIGHT
+	OUTPUT DSP
+    SerOut DSP,N9600,[LITEOFF]
+	INPUT DSP
+    Return
+LINE_1:												'SEND THE CURSOR TO LINE #1
+	OUTPUT DSP
+    SerOut DSP,N9600,[POSCMD,LINE1]
+	INPUT DSP
+    Return
+LINE_2:												'SEND THE CURSOR TO LINE #2
+	OUTPUT DSP
+    SerOut DSP,N9600,[POSCMD,LINE2]
+	INPUT DSP
+    Return
+LINE_3:												'SEND THE CURSOR TO LINE #3
+	OUTPUT DSP
+    SerOut DSP,N9600,[POSCMD,LINE3]
+	INPUT DSP
+    Return
+LINE_4:												'SEND THE CURSOR TO LINE #4
+	OUTPUT DSP
+    SerOut DSP,N9600,[POSCMD,LINE4]
+	INPUT DSP
+    Return
+
+'**************************************************************************************************************************************************************************************
+'Additional Subroutines for Calibration, Remote Control Activation, Etc.
+
+PROCESS_RCVR_D0:
+PROCESS_RCVR_D0_LOOP:
+    PAUSEUS 50
+    IF RCVR_D0 = 1 then PROCESS_RCVR_D0_LOOP
+RETURN
+
